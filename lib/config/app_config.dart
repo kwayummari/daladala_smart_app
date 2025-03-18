@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConfig {
   // API Configuration
-  static const String apiBaseUrl = 'https://192.168.1.155:3000/api';
+  static const String apiBaseUrl = 'http://192.168.1.100:3000/api';
   
   // App Version
   static const String appVersion = '1.0.0';
