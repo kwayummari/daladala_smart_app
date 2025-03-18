@@ -75,32 +75,31 @@ class BookingProvider with ChangeNotifier {
   
   // Fetch user bookings
   Future<void> fetchBookings({String? status}) async {
-    _bookingsLoading = true;
-    _bookingsError = '';
-    notifyListeners();
+  _bookingsLoading = true;
+  _bookingsError = '';
+  notifyListeners();
+  
+  try {
+    final queryParams = status != null ? {'status': status} : null;
     
-    try {
-      final queryParams = status != null ? {'status': status} : null;
-      
-      final response = await _apiService.get<List<Booking>>(
-        ApiConfig.bookings,
-        queryParams: queryParams,
-        fromJsonList: (jsonList) => 
-            jsonList.map((json) => Booking.fromJson(json)).toList(),
-      );
-      
-      if (response.success && response.data != null) {
-        _bookings = response.data!;
-      } else {
-        _bookingsError = response.message;
-      }
-    } catch (e) {
-      _bookingsError = 'Failed to fetch bookings: ${e.toString()}';
-    } finally {
-      _bookingsLoading = false;
-      notifyListeners();
+    final response = await _apiService.getList<Booking>(
+      ApiConfig.bookings,
+      queryParams: queryParams,
+      fromJson: (json) => Booking.fromJson(json),
+    );
+    
+    if (response.success && response.data != null) {
+      _bookings = response.data!;
+    } else {
+      _bookingsError = response.message;
     }
+  } catch (e) {
+    _bookingsError = 'Failed to fetch bookings: ${e.toString()}';
+  } finally {
+    _bookingsLoading = false;
+    notifyListeners();
   }
+}
   
   // Fetch booking details
   Future<void> fetchBookingDetails(int bookingId) async {

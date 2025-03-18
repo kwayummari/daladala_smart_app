@@ -205,4 +205,84 @@ class ApiService {
       );
     }
   }
+
+  // Add this method specifically for handling lists
+Future<ApiResponse<List<T>>> getList<T>(
+  String url, {
+  Map<String, String>? queryParams,
+  required T Function(Map<String, dynamic>) fromJson,
+}) async {
+  try {
+    final headers = await _getHeaders();
+    
+    if (queryParams != null) {
+      final queryString = Uri(queryParameters: queryParams).query;
+      url = '$url?$queryString';
+    }
+    
+    final response = await http.get(
+      Uri.parse(url),
+      headers: headers,
+    ).timeout(AppConfig.timeoutDuration);
+
+    return _processListResponse<T>(response, fromJson);
+  } on SocketException {
+    return ApiResponse(
+      success: false,
+      message: 'No Internet connection',
+      statusCode: 0,
+    );
+  } on Exception catch (e) {
+    return ApiResponse(
+      success: false,
+      message: 'Request failed: ${e.toString()}',
+      statusCode: 0,
+    );
+  }
+}
+
+// Process HTTP response for list data
+ApiResponse<List<T>> _processListResponse<T>(
+  http.Response response,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  try {
+    final responseJson = json.decode(response.body);
+    final statusCode = response.statusCode;
+    
+    if (statusCode >= 200 && statusCode < 300) {
+      final success = responseJson['status'] == 'success';
+      final message = responseJson['message'] ?? '';
+      
+      List<T>? data;
+      if (responseJson['data'] != null && responseJson['data'] is List) {
+        data = (responseJson['data'] as List)
+            .map((item) => fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        data = <T>[];
+      }
+
+      return ApiResponse(
+        success: success,
+        message: message,
+        data: data,
+        statusCode: statusCode,
+      );
+    } else {
+      final message = responseJson['message'] ?? 'Request failed';
+      return ApiResponse(
+        success: false,
+        message: message,
+        statusCode: statusCode,
+      );
+    }
+  } catch (e) {
+    return ApiResponse(
+      success: false,
+      message: 'Failed to process response: ${e.toString()}',
+      statusCode: response.statusCode,
+    );
+  }
+}
 }
