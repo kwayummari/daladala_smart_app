@@ -1,5 +1,5 @@
 import 'package:daladala_smart_app/models/route.dart' as app_route;
-import 'package:daladala_smart_app/models/stop.dart';
+import 'package:daladala_smart_app/models/stop.dart' as app_stop;
 import 'package:daladala_smart_app/models/user.dart';
 
 class Trip {
@@ -16,8 +16,8 @@ class Trip {
   final app_route.Route? route;
   final Vehicle? vehicle;
   final Driver? driver;
-  final Stop? currentStop;
-  final Stop? nextStop;
+  final app_stop.Stop? currentStop;
+  final app_stop.Stop? nextStop;
   final List<RouteTracking>? tracking;
   final VehicleLocation? currentLocation;
 

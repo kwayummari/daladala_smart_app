@@ -1,4 +1,4 @@
-import 'package:daladala_smart_app/models/stop.dart';
+import 'package:daladala_smart_app/models/stop.dart' as app_stop;
 import 'package:daladala_smart_app/models/trip.dart';
 import 'package:daladala_smart_app/models/user.dart';
 
@@ -14,8 +14,8 @@ class Booking {
   final String status;
   final String paymentStatus;
   final Trip? trip;
-  final Stop? pickupStop;
-  final Stop? dropoffStop;
+  final app_stop.Stop? pickupStop;
+  final app_stop.Stop? dropoffStop;
   final User? user;
   final Payment? payment;
 
@@ -50,8 +50,8 @@ class Booking {
       status: json['status'],
       paymentStatus: json['payment_status'],
       trip: json['Trip'] != null ? Trip.fromJson(json['Trip']) : null,
-      pickupStop: json['pickupStop'] != null ? Stop.fromJson(json['pickupStop']) : null,
-      dropoffStop: json['dropoffStop'] != null ? Stop.fromJson(json['dropoffStop']) : null,
+      pickupStop: json['pickupStop'] != null ? app_stop.Stop.fromJson(json['pickupStop']) : null,
+      dropoffStop: json['dropoffStop'] != null ? app_stop.Stop.fromJson(json['dropoffStop']) : null,
       user: json['User'] != null ? User.fromJson(json['User']) : null,
       payment: json['payment'] != null ? Payment.fromJson(json['payment']) : null,
     );
