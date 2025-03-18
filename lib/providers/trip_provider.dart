@@ -105,14 +105,14 @@ class TripProvider with ChangeNotifier {
     notifyListeners();
     
     try {
-      final response = await _apiService.get<List<app_route.Route>>(
+      final response = await _apiService.get<app_route.Route>(
         ApiConfig.routes,
         fromJsonList: (jsonList) => 
             jsonList.map((json) => app_route.Route.fromJson(json)).toList(),
       );
       
       if (response.success && response.data != null) {
-        _routes = response.data!;
+        _routes = response.data! as List<app_route.Route>;
       } else {
         _routesError = response.message;
       }
@@ -127,7 +127,7 @@ class TripProvider with ChangeNotifier {
   // Search routes
   Future<List<app_route.Route>> searchRoutes(String startPoint, String endPoint) async {
     try {
-      final response = await _apiService.get<List<app_route.Route>>(
+      final response = await _apiService.get<app_route.Route>(
         ApiConfig.searchRoutes,
         queryParams: {
           'start_point': startPoint,
@@ -138,7 +138,7 @@ class TripProvider with ChangeNotifier {
       );
       
       if (response.success && response.data != null) {
-        return response.data!;
+        return response.data! as List<app_route.Route>;
       }
       return [];
     } catch (e) {
@@ -154,14 +154,14 @@ class TripProvider with ChangeNotifier {
     notifyListeners();
     
     try {
-      final response = await _apiService.get<List<Stop>>(
+      final response = await _apiService.get<Stop>(
         ApiConfig.stops,
         fromJsonList: (jsonList) => 
             jsonList.map((json) => Stop.fromJson(json)).toList(),
       );
       
       if (response.success && response.data != null) {
-        _stops = response.data!;
+        _stops = response.data! as List<Stop>;
       } else {
         _stopsError = response.message;
       }
@@ -176,7 +176,7 @@ class TripProvider with ChangeNotifier {
   // Search stops
   Future<List<Stop>> searchStops(String query) async {
     try {
-      final response = await _apiService.get<List<Stop>>(
+      final response = await _apiService.get<Stop>(
         ApiConfig.searchStops,
         queryParams: {'query': query},
         fromJsonList: (jsonList) => 
@@ -184,7 +184,7 @@ class TripProvider with ChangeNotifier {
       );
       
       if (response.success && response.data != null) {
-        return response.data!;
+        return response.data! as List<Stop>;
       }
       return [];
     } catch (e) {
@@ -222,14 +222,14 @@ class TripProvider with ChangeNotifier {
   // Fetch route stops
   Future<void> fetchRouteStops(int routeId) async {
     try {
-      final response = await _apiService.get<List<app_route.RouteStop>>(
+      final response = await _apiService.get<app_route.RouteStop>(
         '${ApiConfig.routeStops}/$routeId/stops',
         fromJsonList: (jsonList) => 
             jsonList.map((json) => app_route.RouteStop.fromJson(json)).toList(),
       );
       
       if (response.success && response.data != null) {
-        _routeStops = response.data!;
+        _routeStops = response.data! as List<app_route.RouteStop>;
       }
     } catch (e) {
       debugPrint('Failed to fetch route stops: ${e.toString()}');
@@ -245,7 +245,7 @@ class TripProvider with ChangeNotifier {
     try {
       final queryParams = routeId != null ? {'route_id': routeId.toString()} : null;
       
-      final response = await _apiService.get<List<Trip>>(
+      final response = await _apiService.get<Trip>(
         ApiConfig.upcomingTrips,
         queryParams: queryParams,
         fromJsonList: (jsonList) => 
@@ -253,7 +253,7 @@ class TripProvider with ChangeNotifier {
       );
       
       if (response.success && response.data != null) {
-        _upcomingTrips = response.data!;
+        _upcomingTrips = response.data! as List<Trip>;
       } else {
         _upcomingTripsError = response.message;
       }

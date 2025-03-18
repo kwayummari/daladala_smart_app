@@ -179,26 +179,26 @@ class UserProvider with ChangeNotifier {
   
   // Fetch notifications
   Future<void> fetchNotifications() async {
-    _notificationsLoading = true;
-    notifyListeners();
+  _notificationsLoading = true;
+  notifyListeners();
+  
+  try {
+    final response = await _apiService.get<Notification>(  // Changed from List<Notification> to just Notification
+      ApiConfig.notifications,
+      fromJsonList: (jsonList) => 
+          jsonList.map((json) => Notification.fromJson(json)).toList(),
+    );
     
-    try {
-      final response = await _apiService.get<List<Notification>>(
-        ApiConfig.notifications,
-        fromJsonList: (jsonList) => 
-            jsonList.map((json) => Notification.fromJson(json)).toList(),
-      );
-      
-      if (response.success && response.data != null) {
-        _notifications = response.data!;
-      }
-    } catch (e) {
-      debugPrint('Failed to fetch notifications: ${e.toString()}');
-    } finally {
-      _notificationsLoading = false;
-      notifyListeners();
+    if (response.success && response.data != null) {
+      _notifications = response.data! as List<Notification>;  // Add cast here
     }
+  } catch (e) {
+    debugPrint('Failed to fetch notifications: ${e.toString()}');
+  } finally {
+    _notificationsLoading = false;
+    notifyListeners();
   }
+}
   
   // Mark notification as read
   Future<bool> markNotificationAsRead(int notificationId) async {
