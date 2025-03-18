@@ -78,29 +78,29 @@ class PaymentProvider with ChangeNotifier {
   
   // Fetch payment history
   Future<void> fetchPaymentHistory() async {
-    _historyLoading = true;
-    _historyError = '';
-    notifyListeners();
+  _historyLoading = true;
+  _historyError = '';
+  notifyListeners();
+  
+  try {
+    final response = await _apiService.get<Payment>(
+      ApiConfig.paymentHistory,
+      fromJsonList: (jsonList) => 
+          jsonList.map((json) => Payment.fromJson(json)).toList(),
+    );
     
-    try {
-      final response = await _apiService.get<List<Payment>>(
-        ApiConfig.paymentHistory,
-        fromJsonList: (jsonList) => 
-            jsonList.map((json) => Payment.fromJson(json)).toList(),
-      );
-      
-      if (response.success && response.data != null) {
-        _paymentHistory = response.data!;
-      } else {
-        _historyError = response.message;
-      }
-    } catch (e) {
-      _historyError = 'Failed to fetch payment history: ${e.toString()}';
-    } finally {
-      _historyLoading = false;
-      notifyListeners();
+    if (response.success && response.data != null) {
+      _paymentHistory = response.data! as List<Payment>;
+    } else {
+      _historyError = response.message;
     }
+  } catch (e) {
+    _historyError = 'Failed to fetch payment history: ${e.toString()}';
+  } finally {
+    _historyLoading = false;
+    notifyListeners();
   }
+}
   
   // Fetch payment details
   Future<void> fetchPaymentDetails(int paymentId) async {
