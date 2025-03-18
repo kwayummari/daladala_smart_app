@@ -16,8 +16,8 @@ class AppConfig {
 }
 
 class AppColors {
-  static const Color primary = Color(0xFF4CAF50);
-  static const Color primaryDark = Color(0xFF388E3C);
+  static const Color primary = Color(0xFF00967B);
+  static const Color primaryDark = Color(0xFF00967B);
   static const Color accent = Color(0xFFFFC107);
   static const Color background = Color(0xFFF5F5F5);
   static const Color cardBackground = Colors.white;
