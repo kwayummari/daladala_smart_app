@@ -50,6 +50,8 @@ dependencies:
   flutter_local_notifications: ^19.0.0  # Local notifications
   path_provider: ^2.0.15  # File system access
   permission_handler: ^11.4.0  # Permission handling
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.2.19
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +80,19 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/logo.png"
+  android: true
+  ios: true
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
