@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/screens/payment/payment_success_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:daladala_smart_app/config/app_config.dart';
@@ -273,7 +274,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               
               // Payment details form based on selected payment method
               if (_selectedPaymentMethod == 'mobile_money')
-                _buildMobileMoneyForm(),
+                _buildMobileMoneyForm()
               else if (_selectedPaymentMethod == 'wallet')
                 _buildWalletForm(),
               
