@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:daladala_smart_app/config/app_config.dart';
-import 'package:daladala_smart_app/models/booking.dart';
 import 'package:daladala_smart_app/providers/booking_provider.dart';
 import 'package:daladala_smart_app/providers/payment_provider.dart';
-import 'package:daladala_smart_app/screens/booking/booking_details_screen.dart';
+import 'package:daladala_smart_app/screens/bookings/booking_details_screen.dart';
 import 'package:daladala_smart_app/widgets/common/loading_indicator.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
