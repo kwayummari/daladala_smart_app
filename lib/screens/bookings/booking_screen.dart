@@ -3,11 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:daladala_smart_app/config/app_config.dart';
 import 'package:daladala_smart_app/models/route.dart' as app_route;
-import 'package:daladala_smart_app/models/stop.dart';
+import 'package:daladala_smart_app/models/stop.dart' as app_stop;
 import 'package:daladala_smart_app/models/trip.dart';
 import 'package:daladala_smart_app/providers/booking_provider.dart';
 import 'package:daladala_smart_app/providers/trip_provider.dart';
-import 'package:daladala_smart_app/screens/booking/booking_confirmation_screen.dart';
+import 'package:daladala_smart_app/screens/bookings/booking_confirmation_screen.dart';
 import 'package:daladala_smart_app/widgets/common/loading_indicator.dart';
 
 class NewBookingScreen extends StatefulWidget {
@@ -29,8 +29,8 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
   Trip? _selectedTrip;
   
   // Step 2: Select pickup and dropoff
-  Stop? _selectedPickupStop;
-  Stop? _selectedDropoffStop;
+  app_stop.Stop? _selectedPickupStop;
+  app_stop.Stop? _selectedDropoffStop;
   app_route.Fare? _calculatedFare;
   
   // Step 3: Passenger details
@@ -83,7 +83,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
     });
   }
   
-  void _selectPickupStop(Stop stop) {
+  void _selectPickupStop(app_stop.Stop stop) {
     setState(() {
       _selectedPickupStop = stop;
       
@@ -94,7 +94,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
     });
   }
   
-  void _selectDropoffStop(Stop stop) {
+  void _selectDropoffStop(app_stop.Stop stop) {
     setState(() {
       _selectedDropoffStop = stop;
       
@@ -467,7 +467,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<Stop>(
+            child: DropdownButton<app_stop.Stop>(
               value: _selectedPickupStop,
               isExpanded: true,
               hint: const Padding(
@@ -476,12 +476,12 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               items: stops.map((stop) {
-                return DropdownMenuItem<Stop>(
+                return DropdownMenuItem<app_stop.Stop>(
                   value: stop,
                   child: Text(stop!.stopName),
                 );
               }).toList(),
-              onChanged: (Stop? value) {
+              onChanged: (app_stop.Stop? value) {
                 if (value != null) {
                   _selectPickupStop(value);
                 }
@@ -505,7 +505,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<Stop>(
+            child: DropdownButton<app_stop.Stop>(
               value: _selectedDropoffStop,
               isExpanded: true,
               hint: const Padding(
@@ -514,12 +514,12 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               items: stops.map((stop) {
-                return DropdownMenuItem<Stop>(
+                return DropdownMenuItem<app_stop.Stop>(
                   value: stop,
                   child: Text(stop!.stopName),
                 );
               }).toList(),
-              onChanged: (Stop? value) {
+              onChanged: (app_stop.Stop? value) {
                 if (value != null && value != _selectedPickupStop) {
                   _selectDropoffStop(value);
                 }
