@@ -47,9 +47,9 @@ dependencies:
   url_launcher: ^6.1.12  # URL launching
   share_plus: ^7.0.2     # Sharing content
   google_fonts: ^4.0.4   # Custom fonts
-  flutter_local_notifications: ^14.1.1  # Local notifications
+  flutter_local_notifications: ^19.0.0  # Local notifications
   path_provider: ^2.0.15  # File system access
-  permission_handler: ^10.4.3  # Permission handling
+  permission_handler: ^11.4.0  # Permission handling
 
 dev_dependencies:
   flutter_test:
