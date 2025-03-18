@@ -38,10 +38,18 @@ dependencies:
   provider: ^6.0.5       # State management
   shared_preferences: ^2.2.0  # Local storage
   flutter_map: ^5.0.0    # Maps for route visualization
+  latlong2: ^0.9.0       # For LatLng coordinates used with flutter_map
   geolocator: ^9.0.2     # Location services
   flutter_secure_storage: ^8.0.0  # Secure storage for tokens
   intl: ^0.18.1          # Internationalization and formatting
   cached_network_image: ^3.2.3  # Caching images
+  flutter_svg: ^2.0.7    # SVG support
+  url_launcher: ^6.1.12  # URL launching
+  share_plus: ^7.0.2     # Sharing content
+  google_fonts: ^4.0.4   # Custom fonts
+  flutter_local_notifications: ^14.1.1  # Local notifications
+  path_provider: ^2.0.15  # File system access
+  permission_handler: ^10.4.3  # Permission handling
 
 dev_dependencies:
   flutter_test:
