@@ -56,44 +56,8 @@ class Trip {
       route: json['Route'] != null ? app_route.Route.fromJson(json['Route']) : null,
       vehicle: json['Vehicle'] != null ? Vehicle.fromJson(json['Vehicle']) : null,
       driver: json['Driver'] != null ? Driver.fromJson(json['Driver']) : null,
-  });
-}
-
-class VehicleLocation {
-  final int locationId;
-  final int vehicleId;
-  final int? tripId;
-  final double latitude;
-  final double longitude;
-  final double? heading;
-  final double? speed;
-  final String recordedAt;
-
-  VehicleLocation({
-    required this.locationId,
-    required this.vehicleId,
-    this.tripId,
-    required this.latitude,
-    required this.longitude,
-    this.heading,
-    this.speed,
-    required this.recordedAt,
-  });
-
-  factory VehicleLocation.fromJson(Map<String, dynamic> json) {
-    return VehicleLocation(
-      locationId: json['location_id'],
-      vehicleId: json['vehicle_id'],
-      tripId: json['trip_id'],
-      latitude: double.parse(json['latitude'].toString()),
-      longitude: double.parse(json['longitude'].toString()),
-      heading: json['heading'] != null ? double.parse(json['heading'].toString()) : null,
-      speed: json['speed'] != null ? double.parse(json['speed'].toString()) : null,
-      recordedAt: json['recorded_at'],
-    );
-  }
-}  currentStop: json['currentStop'] != null ? Stop.fromJson(json['currentStop']) : null,
-      nextStop: json['nextStop'] != null ? Stop.fromJson(json['nextStop']) : null,
+      currentStop: json['currentStop'] != null ? app_stop.Stop.fromJson(json['currentStop']) : null,
+      nextStop: json['nextStop'] != null ? app_stop.Stop.fromJson(json['nextStop']) : null,
       tracking: json['tracking'] != null
           ? (json['tracking'] as List)
               .map((e) => RouteTracking.fromJson(e))
@@ -117,7 +81,7 @@ class RouteTracking {
   final String? arrivalTime;
   final String? departureTime;
   final String status;
-  final Stop? stop;
+  final app_stop.Stop? stop;
 
   RouteTracking({
     required this.trackingId,
@@ -137,7 +101,7 @@ class RouteTracking {
       arrivalTime: json['arrival_time'],
       departureTime: json['departure_time'],
       status: json['status'],
-      stop: json['Stop'] != null ? Stop.fromJson(json['Stop']) : null,
+      stop: json['Stop'] != null ? app_stop.Stop.fromJson(json['Stop']) : null,
     );
   }
 }
@@ -188,3 +152,41 @@ class Vehicle {
       isActive: json['is_active'] == 1,
       status: json['status'],
       driver: json['Driver'] != null ? Driver.fromJson(json['Driver']) : null,
+    );
+  }
+}
+
+class VehicleLocation {
+  final int locationId;
+  final int vehicleId;
+  final int? tripId;
+  final double latitude;
+  final double longitude;
+  final double? heading;
+  final double? speed;
+  final String recordedAt;
+
+  VehicleLocation({
+    required this.locationId,
+    required this.vehicleId,
+    this.tripId,
+    required this.latitude,
+    required this.longitude,
+    this.heading,
+    this.speed,
+    required this.recordedAt,
+  });
+
+  factory VehicleLocation.fromJson(Map<String, dynamic> json) {
+    return VehicleLocation(
+      locationId: json['location_id'],
+      vehicleId: json['vehicle_id'],
+      tripId: json['trip_id'],
+      latitude: double.parse(json['latitude'].toString()),
+      longitude: double.parse(json['longitude'].toString()),
+      heading: json['heading'] != null ? double.parse(json['heading'].toString()) : null,
+      speed: json['speed'] != null ? double.parse(json['speed'].toString()) : null,
+      recordedAt: json['recorded_at'],
+    );
+  }
+}

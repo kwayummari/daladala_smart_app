@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:daladala_smart_app/config/app_config.dart';
 import 'package:daladala_smart_app/models/route.dart' as app_route;
 import 'package:daladala_smart_app/models/trip.dart';
 import 'package:daladala_smart_app/providers/trip_provider.dart';
-import 'package:daladala_smart_app/screens/booking/new_booking_screen.dart';
+import 'package:daladala_smart_app/screens/bookings/new_booking_screen.dart';
 import 'package:daladala_smart_app/screens/trips/trip_detail_screen.dart';
 import 'package:daladala_smart_app/widgets/common/loading_indicator.dart';
 import 'package:daladala_smart_app/widgets/trip/trip_card.dart';

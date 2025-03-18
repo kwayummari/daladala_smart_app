@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:daladala_smart_app/config/app_config.dart';
 import 'package:daladala_smart_app/models/trip.dart';
 import 'package:daladala_smart_app/providers/trip_provider.dart';
-import 'package:daladala_smart_app/screens/booking/new_booking_screen.dart';
+import 'package:daladala_smart_app/screens/bookings/new_booking_screen.dart';
 import 'package:daladala_smart_app/widgets/common/loading_indicator.dart';
 
 class TripDetailScreen extends StatefulWidget {
