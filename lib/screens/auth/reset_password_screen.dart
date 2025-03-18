@@ -6,11 +6,8 @@ import 'package:daladala_smart_app/widgets/common/loading_indicator.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String phone;
-  
-  const ResetPasswordScreen({
-    Key? key,
-    required this.phone,
-  }) : super(key: key);
+
+  const ResetPasswordScreen({Key? key, required this.phone}) : super(key: key);
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -25,14 +22,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   String _errorMessage = '';
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reset Password'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Reset Password'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.paddingLarge),
@@ -48,7 +42,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   color: AppColors.primary,
                 ),
                 const SizedBox(height: AppSizes.marginLarge),
-                
+
                 // Instruction Text
                 Text(
                   'Reset Your Password',
@@ -62,12 +56,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSizes.marginLarge),
-                
+
                 // Error Message
                 if (_errorMessage.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(AppSizes.paddingMedium),
-                    margin: const EdgeInsets.only(bottom: AppSizes.marginMedium),
+                    margin: const EdgeInsets.only(
+                      bottom: AppSizes.marginMedium,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(AppSizes.cardRadius),
@@ -80,7 +76,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                
+
                 // Reset Token Field
                 TextFormField(
                   controller: _tokenController,
@@ -97,7 +93,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   },
                 ),
                 const SizedBox(height: AppSizes.marginMedium),
-                
+
                 // New Password Field
                 TextFormField(
                   controller: _passwordController,
@@ -108,7 +104,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: _togglePasswordVisibility,
                     ),
@@ -124,7 +122,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   },
                 ),
                 const SizedBox(height: AppSizes.marginMedium),
-                
+
                 // Confirm Password Field
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -135,7 +133,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: _toggleConfirmPasswordVisibility,
                     ),
@@ -151,14 +151,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   },
                 ),
                 const SizedBox(height: AppSizes.marginLarge),
-                
+
                 // Reset Password Button
                 _isLoading
                     ? const LoadingIndicator()
                     : ElevatedButton(
-                        onPressed: _resetPassword,
-                        child: const Text('RESET PASSWORD'),
-                      ),
+                      onPressed: _resetPassword,
+                      child: const Text('RESET PASSWORD'),
+                    ),
               ],
             ),
           ),
@@ -166,7 +166,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       ),
     );
   }
-  
+
   @override
   void dispose() {
     _tokenController.dispose();
@@ -174,53 +174,57 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
-  
+
   void _togglePasswordVisibility() {
     setState(() {
       _obscurePassword = !_obscurePassword;
     });
   }
-  
+
   void _toggleConfirmPasswordVisibility() {
     setState(() {
       _obscureConfirmPassword = !_obscureConfirmPassword;
     });
   }
-  
+
   Future<void> _resetPassword() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
         _errorMessage = '';
       });
-      
+
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final success = await authProvider.resetPassword(
           _tokenController.text.trim(),
           _passwordController.text.trim(),
         );
-        
+
         if (success && mounted) {
           // Show success dialog and navigate back to login
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              title: const Text('Password Reset Successful'),
-              content: const Text(
-                'Your password has been reset successfully. You can now login with your new password.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.popUntil(context, ModalRoute.withName('/login')); // Back to login
-                  },
-                  child: const Text('OK'),
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Password Reset Successful'),
+                  content: const Text(
+                    'Your password has been reset successfully. You can now login with your new password.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.popUntil(
+                          context,
+                          ModalRoute.withName('/login'),
+                        ); // Back to login
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
         } else if (mounted) {
           setState(() {
@@ -240,3 +244,4 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       }
     }
   }
+}
