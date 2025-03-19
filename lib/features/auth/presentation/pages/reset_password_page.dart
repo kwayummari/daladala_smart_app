@@ -4,7 +4,6 @@ import '../../../../core/ui/widgets/custom_button.dart';
 import '../../../../core/ui/widgets/custom_input.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/utils/extensions.dart';
-import 'login_page.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String phone;
