@@ -23,7 +23,7 @@ import '../../features/trips/data/datasources/trip_datasource.dart';
 import '../../features/trips/data/repositories/trip_repository_impl.dart';
 import '../../features/trips/domains/repositories/trip_repository.dart';
 import '../../features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
-import '../../features/payments/domain/usescases/get_trip_details_usecase.dart';
+import '../../features/trips/domains/usecases/get_trip_details_usecase.dart';
 import '../../features/trips/presentation/providers/trip_provider.dart';
 
 import '../../features/trips/data/datasources/route_datasource.dart';

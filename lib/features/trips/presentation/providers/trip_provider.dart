@@ -1,4 +1,4 @@
-import 'package:daladala_smart_app/features/payments/domain/usescases/get_trip_details_usecase.dart';
+import 'package:daladala_smart_app/features/trips/domains/usecases/get_trip_details_usecase.dart';
 import 'package:daladala_smart_app/features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
