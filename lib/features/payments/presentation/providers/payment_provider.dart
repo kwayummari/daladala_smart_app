@@ -1,10 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
-import '../../domain/entities/payment.dart';
-import '../../domain/usecases/process_payment_usecase.dart';
-import '../../domain/usecases/get_payment_history_usecase.dart';
-import '../../domain/usecases/get_wallet_balance_usecase.dart';
 
 class PaymentProvider extends ChangeNotifier {
   final ProcessPaymentUseCase processPaymentUseCase;

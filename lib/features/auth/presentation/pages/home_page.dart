@@ -1,12 +1,14 @@
+import 'package:daladala_smart_app/features/bookings/presentation/pages/bookings_page.dart';
 import 'package:daladala_smart_app/features/home/presentation/widgets/home_nearby_stops.dart';
 import 'package:daladala_smart_app/features/home/presentation/widgets/home_quick_actions.dart';
 import 'package:daladala_smart_app/features/home/presentation/widgets/home_search_bar.dart';
 import 'package:daladala_smart_app/features/home/presentation/widgets/home_upcoming_trips.dart';
+import 'package:daladala_smart_app/features/profile/presentation/pages/profile_page.dart';
+import 'package:daladala_smart_app/features/routes/presentation/pages/routes_page.dart';
+import 'package:daladala_smart_app/features/trips/presentation/pages/trips_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/constants.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class HomePage extends StatefulWidget {
