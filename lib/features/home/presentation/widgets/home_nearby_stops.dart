@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../routes/domain/entities/stop.dart';
-import '../../../routes/presentation/pages/stop_detail_page.dart';
 
 class HomeNearbyStops extends StatefulWidget {
   const HomeNearbyStops({Key? key}) : super(key: key);

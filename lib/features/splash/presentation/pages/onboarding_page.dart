@@ -1,7 +1,7 @@
+import 'package:daladala_smart_app/features/splash/presentation/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
-import '../../../auth/presentation/pages/login_page.dart';
 import '../widgets/onboarding_item.dart';
 
 class OnboardingPage extends StatefulWidget {
