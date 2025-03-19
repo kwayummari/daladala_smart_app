@@ -1,3 +1,5 @@
+import 'package:daladala_smart_app/features/bookings/presentation/pages/bookings_page.dart';
+import 'package:daladala_smart_app/features/trips/presentation/pages/trips_page.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../routes/presentation/pages/search_route_page.dart';
