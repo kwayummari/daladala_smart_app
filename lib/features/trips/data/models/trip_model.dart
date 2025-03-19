@@ -1,5 +1,5 @@
+import 'package:daladala_smart_app/features/trips/domains/entities/trip.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../domain/entities/trip.dart';
 
 class TripModel extends Trip {
   const TripModel({
