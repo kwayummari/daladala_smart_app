@@ -1,13 +1,15 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/usecases/usecase.dart';
 import '../entities/payment.dart';
 import '../repositories/payment_repository.dart';
 
-class ProcessPaymentUseCase {
+class ProcessPaymentUseCase implements UseCase<Payment, ProcessPaymentParams> {
   final PaymentRepository repository;
 
   ProcessPaymentUseCase({required this.repository});
 
+  @override
   Future<Either<Failure, Payment>> call(ProcessPaymentParams params) async {
     return await repository.processPayment(
       bookingId: params.bookingId,

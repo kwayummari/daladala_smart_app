@@ -4,6 +4,7 @@ import 'package:daladala_smart_app/features/payments/domain/usescases/process_pa
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/payment.dart';
 
 class PaymentProvider extends ChangeNotifier {
@@ -77,7 +78,7 @@ class PaymentProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     
-    final result = await getPaymentHistoryUseCase(NoParams());
+    final result = await getPaymentHistoryUseCase(const NoParams());
     
     result.fold(
       (failure) {
@@ -104,7 +105,7 @@ class PaymentProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     
-    final result = await getWalletBalanceUseCase!(NoParams());
+    final result = await getWalletBalanceUseCase!(const NoParams());
     
     result.fold(
       (failure) {
