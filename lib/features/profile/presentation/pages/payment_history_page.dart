@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/payments/domain/entities/payment.dart';
 import 'package:daladala_smart_app/features/payments/presentation/providers/payment_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +10,7 @@ import '../../../../core/ui/widgets/error_view.dart';
 import 'payment_detail_page.dart';
 
 class PaymentHistoryPage extends StatefulWidget {
-  const PaymentHistoryPage({Key? key}) : super(key: key);
+  const PaymentHistoryPage({super.key});
 
   @override
   State<PaymentHistoryPage> createState() => _PaymentHistoryPageState();
@@ -142,10 +143,10 @@ class _PaymentItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const _PaymentItem({
-    Key? key,
+    super.key,
     required this.payment,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
