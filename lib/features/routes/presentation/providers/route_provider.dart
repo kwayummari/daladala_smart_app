@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
-import '../../domain/entities/route.dart';
-import '../../domain/entities/stop.dart';
-import '../../domain/entities/fare.dart';
 import '../../domain/usecases/get_all_routes_usecase.dart';
 import '../../domain/usecases/get_route_stops_usecase.dart';
 import '../../domain/usecases/get_route_fares_usecase.dart';
