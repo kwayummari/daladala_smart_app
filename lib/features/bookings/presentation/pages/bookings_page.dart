@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/bookings/domain/entities/booking.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';

@@ -12,9 +12,9 @@ class BookingDetailPage extends StatefulWidget {
   final int bookingId;
 
   const BookingDetailPage({
-    Key? key,
+    super.key,
     required this.bookingId,
-  }) : super(key: key);
+  });
 
   @override
   State<BookingDetailPage> createState() => _BookingDetailPageState();
@@ -58,27 +58,28 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
     
     if (confirm == true) {
-      final result = await bookingProvider.cancelBooking(widget.bookingId);
+      // Call the cancelBooking method and let the provider handle the state updates
+      await bookingProvider.cancelBooking(widget.bookingId);
       
+      // Check for errors after the operation is complete
       if (mounted) {
-        result.fold(
-          (failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(failure.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          },
-          (_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Booking cancelled successfully'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          },
-        );
+        if (bookingProvider.error != null) {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(bookingProvider.error!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Booking cancelled successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     }
   }

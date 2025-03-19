@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
+import '../../domain/entities/booking.dart';
 import '../../domain/usecases/create_booking_usecase.dart';
 import '../../domain/usecases/get_user_bookings_usecase.dart';
 import '../../domain/usecases/get_booking_details_usecase.dart';
@@ -32,7 +31,7 @@ class BookingProvider extends ChangeNotifier {
   String? get error => _error;
   
   // Load user bookings
-  Future<Either<Failure, List<Booking>>> getUserBookings({
+  Future<void> getUserBookings({
     String? status,
   }) async {
     _isLoading = true;
@@ -53,12 +52,10 @@ class BookingProvider extends ChangeNotifier {
     
     _isLoading = false;
     notifyListeners();
-    
-    return result;
   }
   
   // Create booking
-  Future<Either<Failure, Booking>> createBooking({
+  Future<void> createBooking({
     required int tripId,
     required int pickupStopId,
     required int dropoffStopId,
@@ -93,14 +90,14 @@ class BookingProvider extends ChangeNotifier {
     
     _isLoading = false;
     notifyListeners();
-    
-    return result;
   }
   
   // Get booking details
-  Future<Either<Failure, Booking>> getBookingDetails(int bookingId) async {
+  Future<void> getBookingDetails(int bookingId) async {
     if (getBookingDetailsUseCase == null) {
-      return Left(ServerFailure(message: 'Feature not implemented'));
+      _error = 'Feature not implemented';
+      notifyListeners();
+      return;
     }
     
     _isLoading = true;
@@ -121,14 +118,14 @@ class BookingProvider extends ChangeNotifier {
     
     _isLoading = false;
     notifyListeners();
-    
-    return result;
   }
   
   // Cancel booking
-  Future<Either<Failure, void>> cancelBooking(int bookingId) async {
+  Future<void> cancelBooking(int bookingId) async {
     if (cancelBookingUseCase == null) {
-      return Left(ServerFailure(message: 'Feature not implemented'));
+      _error = 'Feature not implemented';
+      notifyListeners();
+      return;
     }
     
     _isLoading = true;
@@ -160,8 +157,6 @@ class BookingProvider extends ChangeNotifier {
     
     _isLoading = false;
     notifyListeners();
-    
-    return result;
   }
   
   // Clear current booking
@@ -175,90 +170,4 @@ class BookingProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
-}
-
-// Define the Booking entity stub since we haven't implemented it yet
-class Booking {
-  final int id;
-  final int userId;
-  final int tripId;
-  final int pickupStopId;
-  final int dropoffStopId;
-  final DateTime bookingTime;
-  final double fareAmount;
-  final int passengerCount;
-  final String status;
-  final String paymentStatus;
-  
-  Booking({
-    required this.id,
-    required this.userId,
-    required this.tripId,
-    required this.pickupStopId,
-    required this.dropoffStopId,
-    required this.bookingTime,
-    required this.fareAmount,
-    required this.passengerCount,
-    required this.status,
-    required this.paymentStatus,
-  });
-  
-  Booking copyWith({
-    int? id,
-    int? userId,
-    int? tripId,
-    int? pickupStopId,
-    int? dropoffStopId,
-    DateTime? bookingTime,
-    double? fareAmount,
-    int? passengerCount,
-    String? status,
-    String? paymentStatus,
-  }) {
-    return Booking(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      tripId: tripId ?? this.tripId,
-      pickupStopId: pickupStopId ?? this.pickupStopId,
-      dropoffStopId: dropoffStopId ?? this.dropoffStopId,
-      bookingTime: bookingTime ?? this.bookingTime,
-      fareAmount: fareAmount ?? this.fareAmount,
-      passengerCount: passengerCount ?? this.passengerCount,
-      status: status ?? this.status,
-      paymentStatus: paymentStatus ?? this.paymentStatus,
-    );
-  }
-}
-
-// Usecase parameter classes
-class CreateBookingParams {
-  final int tripId;
-  final int pickupStopId;
-  final int dropoffStopId;
-  final int passengerCount;
-  
-  CreateBookingParams({
-    required this.tripId,
-    required this.pickupStopId,
-    required this.dropoffStopId,
-    required this.passengerCount,
-  });
-}
-
-class GetUserBookingsParams {
-  final String? status;
-  
-  GetUserBookingsParams({this.status});
-}
-
-class GetBookingDetailsParams {
-  final int bookingId;
-  
-  GetBookingDetailsParams({required this.bookingId});
-}
-
-class CancelBookingParams {
-  final int bookingId;
-  
-  CancelBookingParams({required this.bookingId});
 }
