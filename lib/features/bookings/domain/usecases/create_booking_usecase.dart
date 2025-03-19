@@ -1,13 +1,15 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/usecases/usecase.dart';
 import '../entities/booking.dart';
 import '../repositories/booking_repository.dart';
 
-class CreateBookingUseCase {
+class CreateBookingUseCase implements UseCase<Booking, CreateBookingParams> {
   final BookingRepository repository;
-  
+
   CreateBookingUseCase({required this.repository});
-  
+
+  @override
   Future<Either<Failure, Booking>> call(CreateBookingParams params) async {
     return await repository.createBooking(
       tripId: params.tripId,
