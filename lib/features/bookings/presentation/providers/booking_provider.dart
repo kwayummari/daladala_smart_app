@@ -1,6 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../domain/entities/booking.dart';
+import '../../domain/usecases/create_booking_usecase.dart';
+import '../../domain/usecases/get_user_bookings_usecase.dart';
+import '../../domain/usecases/get_booking_details_usecase.dart';
+import '../../domain/usecases/cancel_booking_usecase.dart';
 
 class BookingProvider extends ChangeNotifier {
   final CreateBookingUseCase createBookingUseCase;
