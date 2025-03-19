@@ -1,9 +1,10 @@
+import 'package:daladala_smart_app/features/routes/data/models/fare_model.dart';
+import 'package:daladala_smart_app/features/routes/data/models/route_model.dart';
+import 'package:daladala_smart_app/features/routes/data/models/stop_model.dart';
+
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/constants.dart';
-import '../models/route_model.dart';
-import '../models/stop_model.dart';
-import '../models/fare_model.dart';
 
 abstract class RouteDataSource {
   /// Get all active routes

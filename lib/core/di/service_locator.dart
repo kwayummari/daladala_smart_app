@@ -21,12 +21,12 @@ import '../../features/bookings/presentation/providers/booking_provider.dart';
 
 import '../../features/trips/data/datasources/trip_datasource.dart';
 import '../../features/trips/data/repositories/trip_repository_impl.dart';
-import '../../features/trips/domain/repositories/trip_repository.dart';
-import '../../features/trips/domain/usecases/get_upcoming_trips_usecase.dart';
-import '../../features/trips/domain/usecases/get_trip_details_usecase.dart';
+import '../../features/trips/domains/repositories/trip_repository.dart';
+import '../../features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
+import '../../features/payments/domain/usescases/get_trip_details_usecase.dart';
 import '../../features/trips/presentation/providers/trip_provider.dart';
 
-import '../../features/routes/data/datasources/route_datasource.dart';
+import '../../features/trips/data/datasources/route_datasource.dart';
 import '../../features/routes/data/repositories/route_repository_impl.dart';
 import '../../features/routes/domain/repositories/route_repository.dart';
 import '../../features/routes/domain/usecases/get_all_routes_usecase.dart';
@@ -36,8 +36,8 @@ import '../../features/routes/presentation/providers/route_provider.dart';
 import '../../features/payments/data/datasources/payment_datasource.dart';
 import '../../features/payments/data/repositories/payment_repository_impl.dart';
 import '../../features/payments/domain/repositories/payment_repository.dart';
-import '../../features/payments/domain/usecases/process_payment_usecase.dart';
-import '../../features/payments/domain/usecases/get_payment_history_usecase.dart';
+import '../../features/payments/domain/usescases/process_payment_usecase.dart';
+import '../../features/payments/domain/usescases/get_payment_history_usecase.dart';
 import '../../features/payments/presentation/providers/payment_provider.dart';
 
 import '../network/dio_client.dart';

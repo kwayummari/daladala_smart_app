@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/trips/data/datasources/route_datasource.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
@@ -6,7 +7,6 @@ import '../../domain/entities/route.dart';
 import '../../domain/entities/stop.dart';
 import '../../domain/entities/fare.dart';
 import '../../domain/repositories/route_repository.dart';
-import '../datasources/route_datasource.dart';
 
 class RouteRepositoryImpl implements RouteRepository {
   final RouteDataSource dataSource;

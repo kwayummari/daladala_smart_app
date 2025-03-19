@@ -1,10 +1,9 @@
+import 'package:daladala_smart_app/features/payments/domain/usescases/get_trip_details_usecase.dart';
 import 'package:daladala_smart_app/features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../core/error/failures.dart';
-import '../../domain/usecases/get_upcoming_trips_usecase.dart';
-import '../../domain/usecases/get_trip_details_usecase.dart';
 
 class TripProvider extends ChangeNotifier {
   final GetUpcomingTripsUseCase getUpcomingTripsUseCase;
