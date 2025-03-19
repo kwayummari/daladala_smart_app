@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/trips/domains/entities/trip.dart';
 import 'package:daladala_smart_app/features/trips/domains/repositories/trip_repository.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/exceptions.dart';
