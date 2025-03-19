@@ -5,9 +5,9 @@ import '../repositories/payment_repository.dart';
 
 class ProcessPaymentUseCase {
   final PaymentRepository repository;
-  
+
   ProcessPaymentUseCase({required this.repository});
-  
+
   Future<Either<Failure, Payment>> call(ProcessPaymentParams params) async {
     return await repository.processPayment(
       bookingId: params.bookingId,

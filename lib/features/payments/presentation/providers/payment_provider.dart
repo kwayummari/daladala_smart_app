@@ -1,8 +1,10 @@
 import 'package:daladala_smart_app/features/payments/domain/usescases/get_payment_history_usecase.dart';
+import 'package:daladala_smart_app/features/payments/domain/usescases/get_wallet_balance_usecase.dart';
 import 'package:daladala_smart_app/features/payments/domain/usescases/process_payment_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../domain/entities/payment.dart';
 
 class PaymentProvider extends ChangeNotifier {
   final ProcessPaymentUseCase processPaymentUseCase;
@@ -135,57 +137,5 @@ class PaymentProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
-  }
-}
-
-// Define the Payment entity stub since we haven't implemented it yet
-class Payment {
-  final int id;
-  final int bookingId;
-  final int userId;
-  final double amount;
-  final String currency;
-  final String paymentMethod;
-  final String? transactionId;
-  final DateTime paymentTime;
-  final String status;
-  final Map<String, dynamic>? paymentDetails;
-  
-  Payment({
-    required this.id,
-    required this.bookingId,
-    required this.userId,
-    required this.amount,
-    required this.currency,
-    required this.paymentMethod,
-    this.transactionId,
-    required this.paymentTime,
-    required this.status,
-    this.paymentDetails,
-  });
-}
-
-// Usecase parameter classes
-class ProcessPaymentParams {
-  final int bookingId;
-  final String paymentMethod;
-  final String? transactionId;
-  final Map<String, dynamic>? paymentDetails;
-  
-  ProcessPaymentParams({
-    required this.bookingId,
-    required this.paymentMethod,
-    this.transactionId,
-    this.paymentDetails,
-  });
-}
-
-class NoParams {}
-
-class GetWalletBalanceUseCase {
-  Future<Either<Failure, double>> call(NoParams params) async {
-    // This would typically call a repository
-    // For now, return a mock balance
-    return Right(25000.0);
   }
 }
