@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/extensions.dart';
-import '../../../trips/domain/entities/trip.dart';
 import '../../../trips/presentation/pages/trip_detail_page.dart';
 
 class HomeUpcomingTrips extends StatefulWidget {
