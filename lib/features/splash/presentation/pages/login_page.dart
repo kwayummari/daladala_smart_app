@@ -1,3 +1,6 @@
+import 'package:daladala_smart_app/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:daladala_smart_app/features/auth/presentation/pages/register_page.dart';
+import 'package:daladala_smart_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
@@ -5,10 +8,7 @@ import '../../../../core/ui/widgets/custom_input.dart';
 import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/utils/extensions.dart';
-import '../providers/auth_provider.dart';
 import '../../../home/presentation/pages/home_page.dart';
-import 'register_page.dart';
-import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);

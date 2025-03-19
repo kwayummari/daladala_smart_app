@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'package:daladala_smart_app/features/splash/presentation/pages/login_page.dart';
 import 'package:daladala_smart_app/features/splash/presentation/pages/onboarding_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/constants.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../auth/presentation/pages/login_page.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/di/service_locator.dart';
