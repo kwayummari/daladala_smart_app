@@ -1,8 +1,10 @@
+import 'package:daladala_smart_app/features/bookings/presentation/pages/bookings_page.dart';
+import 'package:daladala_smart_app/features/profile/presentation/pages/profile_page.dart';
+import 'package:daladala_smart_app/features/routes/presentation/pages/routes_page.dart';
+import 'package:daladala_smart_app/features/trips/presentation/pages/trips_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/constants.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/home_search_bar.dart';
 import '../widgets/home_nearby_stops.dart';
