@@ -16,20 +16,20 @@ class SearchRoutePage extends StatefulWidget {
 class _SearchRoutePageState extends State<SearchRoutePage> {
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
-  
+
   bool _isSearching = false;
   bool _showResults = false;
-  
+
   @override
   void dispose() {
     _fromController.dispose();
     _toController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _searchRoutes() async {
     FocusScope.of(context).unfocus();
-    
+
     if (_fromController.text.isEmpty || _toController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -39,22 +39,22 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
       );
       return;
     }
-    
+
     setState(() {
       _isSearching = true;
       _showResults = false;
     });
-    
+
     // Simulate API call to search for routes
     await Future.delayed(const Duration(seconds: 2));
-    
+
     setState(() {
       _isSearching = false;
       _showResults = true;
     });
   }
-  
-@override
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -107,7 +107,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
                     ),
                   ],
                 ),
-                
+
                 // Connecting line
                 Row(
                   children: [
@@ -129,7 +129,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
                     ),
                   ],
                 ),
-                
+
                 // To field
                 Row(
                   children: [
@@ -158,9 +158,9 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Search button
                 CustomButton(
                   text: 'Find Routes',
@@ -168,9 +168,9 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
                   isLoading: _isSearching,
                   icon: Icons.search,
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Use current location button
                 TextButton.icon(
                   onPressed: () {
@@ -195,26 +195,27 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
               ],
             ),
           ),
-          
+
           // Results
           Expanded(
-            child: _isSearching
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Searching for routes...',
-                          style: TextStyle(
-                            color: AppTheme.textSecondaryColor,
+            child:
+                _isSearching
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Searching for routes...',
+                            style: TextStyle(
+                              color: AppTheme.textSecondaryColor,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : _showResults
+                        ],
+                      ),
+                    )
+                    : _showResults
                     ? _buildSearchResults()
                     : _buildEmptyState(),
           ),
@@ -222,7 +223,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -259,7 +260,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
       ),
     );
   }
-  
+
   Widget _buildSearchResults() {
     // Sample route results
     final results = [
@@ -297,7 +298,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
         'available_trips': 2,
       },
     ];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -314,10 +315,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
         ),
         Text(
           'From ${_fromController.text} to ${_toController.text}',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.textSecondaryColor,
-          ),
+          style: TextStyle(fontSize: 14, color: AppTheme.textSecondaryColor),
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -340,12 +338,13 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => TripSelectionPage(
-                        routeId: route['id'] as int,
-                        routeName: route['route_name'] as String,
-                        from: _fromController.text,
-                        to: _toController.text,
-                      ),
+                      builder:
+                          (_) => TripSelectionPage(
+                            routeId: route['id'] as int,
+                            routeName: route['route_name'] as String,
+                            from: _fromController.text,
+                            to: _toController.text,
+                          ),
                     ),
                   );
                 },
@@ -356,3 +355,4 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
       ],
     );
   }
+}
