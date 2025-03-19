@@ -8,8 +8,7 @@ import '../../../../core/ui/widgets/loading_indicator.dart';
 class PaymentDetailPage extends StatefulWidget {
   final int paymentId;
 
-  const PaymentDetailPage({Key? key, required this.paymentId})
-    : super(key: key);
+  const PaymentDetailPage({super.key, required this.paymentId});
 
   @override
   State<PaymentDetailPage> createState() => _PaymentDetailPageState();
