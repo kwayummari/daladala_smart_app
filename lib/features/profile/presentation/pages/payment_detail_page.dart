@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
 import '../../../../core/ui/widgets/loading_indicator.dart';
+import '../../../../core/utils/extensions.dart';
 
 class PaymentDetailPage extends StatefulWidget {
   final int paymentId;
@@ -100,6 +101,23 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
           backgroundColor: Colors.green,
         ),
       );
+    }
+  }
+  
+  // Add the missing _getStatusColor method
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'paid':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'failed':
+        return Colors.red;
+      case 'refunded':
+        return Colors.blue;
+      default:
+        return AppTheme.textPrimaryColor;
     }
   }
 
@@ -297,7 +315,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
       case 'cash':
         return 'Cash';
       default:
-        return method.replaceAll('_', ' ').capitalize();
+        return method.replaceAll('_', ' ').capitalize;
     }
   }
 }
