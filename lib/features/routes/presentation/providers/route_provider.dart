@@ -1,6 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/usecases/usecase.dart';
+import '../../domain/entities/stop.dart';
+import '../../domain/entities/fare.dart';
 import '../../domain/usecases/get_all_routes_usecase.dart';
 import '../../domain/usecases/get_route_stops_usecase.dart';
 import '../../domain/usecases/get_route_fares_usecase.dart';
@@ -43,7 +46,7 @@ class RouteProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     
-    final result = await getAllRoutesUseCase(NoParams());
+    final result = await getAllRoutesUseCase(const NoParams());
     
     result.fold(
       (failure) {
@@ -125,10 +128,7 @@ class RouteProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     
-    final params = SearchRoutesParams(
-      startPoint: startPoint,
-      endPoint: endPoint,
-    );
+    final params = SearchRoutesParams(startPoint: startPoint, endPoint: endPoint);
     final result = await searchRoutesUseCase!(params);
     
     result.fold(
@@ -163,94 +163,4 @@ class RouteProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
-}
-
-// Define the base entities stubs since we haven't implemented them yet
-class Route {
-  final int id;
-  final String routeNumber;
-  final String routeName;
-  final String startPoint;
-  final String endPoint;
-  final String? description;
-  final double? distanceKm;
-  final int? estimatedTimeMinutes;
-  final String status;
-  
-  Route({
-    required this.id,
-    required this.routeNumber,
-    required this.routeName,
-    required this.startPoint,
-    required this.endPoint,
-    this.description,
-    this.distanceKm,
-    this.estimatedTimeMinutes,
-    required this.status,
-  });
-}
-
-class Stop {
-  final int id;
-  final String stopName;
-  final double latitude;
-  final double longitude;
-  final String? address;
-  final bool isMajor;
-  final String status;
-  
-  Stop({
-    required this.id,
-    required this.stopName,
-    required this.latitude,
-    required this.longitude,
-    this.address,
-    required this.isMajor,
-    required this.status,
-  });
-}
-
-class Fare {
-  final int id;
-  final int routeId;
-  final int startStopId;
-  final int endStopId;
-  final double amount;
-  final String currency;
-  final String fareType;
-  final bool isActive;
-  
-  Fare({
-    required this.id,
-    required this.routeId,
-    required this.startStopId,
-    required this.endStopId,
-    required this.amount,
-    required this.currency,
-    required this.fareType,
-    required this.isActive,
-  });
-}
-
-// Usecase parameter classes
-class NoParams {}
-
-class GetRouteStopsParams {
-  final int routeId;
-  
-  GetRouteStopsParams({required this.routeId});
-}
-
-class GetRouteFaresParams {
-  final int routeId;
-  final String? fareType;
-  
-  GetRouteFaresParams({required this.routeId, this.fareType});
-}
-
-class SearchRoutesParams {
-  final String? startPoint;
-  final String? endPoint;
-  
-  SearchRoutesParams({this.startPoint, this.endPoint});
 }
