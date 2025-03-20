@@ -11,8 +11,9 @@ class GetRouteFaresUseCase implements UseCase<List<Fare>, GetRouteFaresParams> {
 
   @override
   Future<Either<Failure, List<Fare>>> call(GetRouteFaresParams params) async {
+    // Use named parameters to match the repository method signature
     return await repository.getRouteFares(
-      params.routeId,
+      routeId: params.routeId,
       fareType: params.fareType,
     );
   }

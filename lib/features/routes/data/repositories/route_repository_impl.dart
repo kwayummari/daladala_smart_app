@@ -1,9 +1,9 @@
-import 'package:daladala_smart_app/features/trips/data/datasources/route_datasource.dart';
+import 'package:daladala_smart_app/features/routes/data/datasources/route_datasource.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/network_info.dart';
-import '../../domain/entities/route.dart';
+import '../../domain/entities/transport_route.dart';
 import '../../domain/entities/stop.dart';
 import '../../domain/entities/fare.dart';
 import '../../domain/repositories/route_repository.dart';
@@ -18,7 +18,7 @@ class RouteRepositoryImpl implements RouteRepository {
   });
   
   @override
-  Future<Either<Failure, List<Route>>> getAllRoutes() async {
+  Future<Either<Failure, List<TransportRoute>>> getAllRoutes() async {
     if (await networkInfo.isConnected) {
       try {
         final routes = await dataSource.getAllRoutes();
@@ -34,7 +34,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
   
   @override
-  Future<Either<Failure, Route>> getRouteById(int routeId) async {
+  Future<Either<Failure, TransportRoute>> getRouteById(int routeId) async {
     if (await networkInfo.isConnected) {
       try {
         final route = await dataSource.getRouteById(routeId);
@@ -90,7 +90,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
   
   @override
-  Future<Either<Failure, List<Route>>> searchRoutes({
+  Future<Either<Failure, List<TransportRoute>>> searchRoutes({
     String? startPoint,
     String? endPoint,
   }) async {

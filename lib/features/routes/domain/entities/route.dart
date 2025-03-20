@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';
+import '../../domain/entities/transport_route.dart';
 import '../../domain/entities/stop.dart';
 import '../../domain/entities/fare.dart';
 import '../../domain/usecases/get_all_routes_usecase.dart';
@@ -25,11 +26,11 @@ class RouteProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
   
-  List<Route>? _routes;
-  List<Route>? get routes => _routes;
+  List<TransportRoute>? _routes;
+  List<TransportRoute>? get routes => _routes;
   
-  Route? _selectedRoute;
-  Route? get selectedRoute => _selectedRoute;
+  TransportRoute? _selectedRoute;
+  TransportRoute? get selectedRoute => _selectedRoute;
   
   List<Stop>? _stops;
   List<Stop>? get stops => _stops;
@@ -41,7 +42,7 @@ class RouteProvider extends ChangeNotifier {
   String? get error => _error;
   
   // Get all routes
-  Future<Either<Failure, List<Route>>> getAllRoutes() async {
+  Future<Either<Failure, List<TransportRoute>>> getAllRoutes() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -116,7 +117,7 @@ class RouteProvider extends ChangeNotifier {
   }
   
   // Search routes
-  Future<Either<Failure, List<Route>>> searchRoutes({
+  Future<Either<Failure, List<TransportRoute>>> searchRoutes({
     String? startPoint,
     String? endPoint,
   }) async {
@@ -147,7 +148,7 @@ class RouteProvider extends ChangeNotifier {
   }
   
   // Set selected route
-  void setSelectedRoute(Route route) {
+  void setSelectedRoute(TransportRoute route) {
     _selectedRoute = route;
     notifyListeners();
   }

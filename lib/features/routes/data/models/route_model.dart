@@ -1,6 +1,6 @@
-import '../../domain/entities/route.dart';
+import '../../domain/entities/transport_route.dart';
 
-class RouteModel extends Route {
+class RouteModel extends TransportRoute {
   const RouteModel({
     required int id,
     required String routeNumber,

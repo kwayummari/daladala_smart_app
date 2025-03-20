@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/entities/route.dart';
+import '../../domain/entities/transport_route.dart';
 
 class RouteCard extends StatelessWidget {
-  final Route route;
+  final TransportRoute route;
   final VoidCallback onTap;
 
   const RouteCard({
