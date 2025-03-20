@@ -85,11 +85,11 @@ class TripDataSourceImpl implements TripDataSource {
       };
       
       if (currentStopId != null) {
-        data['current_stop_id'] = currentStopId;
+        data['current_stop_id'] = currentStopId.toString();
       }
       
       if (nextStopId != null) {
-        data['next_stop_id'] = nextStopId;
+        data['next_stop_id'] = nextStopId.toString();
       }
       
       final response = await dioClient.put(

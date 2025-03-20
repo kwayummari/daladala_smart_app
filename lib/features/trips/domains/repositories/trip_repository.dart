@@ -3,11 +3,14 @@ import '../../../../core/error/failures.dart';
 import '../entities/trip.dart';
 
 abstract class TripRepository {
-  /// Get upcoming trips
+  /// Get upcoming trips, optionally filtered by route ID
   Future<Either<Failure, List<Trip>>> getUpcomingTrips({int? routeId});
   
-  /// Get trip details
+  /// Get details of a specific trip
   Future<Either<Failure, Trip>> getTripDetails(int tripId);
+  
+  /// Get trips by route
+  Future<Either<Failure, List<Trip>>> getTripsByRoute(int routeId, {String? date});
   
   /// Update trip status (for driver)
   Future<Either<Failure, void>> updateTripStatus({
