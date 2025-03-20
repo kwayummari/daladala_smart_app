@@ -9,12 +9,12 @@ import '../datasources/trip_datasource.dart';
 class TripRepositoryImpl implements TripRepository {
   final TripDataSource dataSource;
   final NetworkInfo networkInfo;
-  
+
   TripRepositoryImpl({
     required this.dataSource,
     required this.networkInfo,
   });
-  
+
   @override
   Future<Either<Failure, List<Trip>>> getUpcomingTrips({int? routeId}) async {
     if (await networkInfo.isConnected) {
@@ -23,6 +23,8 @@ class TripRepositoryImpl implements TripRepository {
         return Right(trips);
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message ?? 'Server error'));
+      } on NoInternetConnectionException catch (e) {
+        return Left(NetworkFailure(message: e.message ?? 'No internet connection'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }
@@ -30,7 +32,7 @@ class TripRepositoryImpl implements TripRepository {
       return Left(NetworkFailure(message: 'No internet connection'));
     }
   }
-  
+
   @override
   Future<Either<Failure, Trip>> getTripDetails(int tripId) async {
     if (await networkInfo.isConnected) {
@@ -41,6 +43,8 @@ class TripRepositoryImpl implements TripRepository {
         return Left(ServerFailure(message: e.message ?? 'Server error'));
       } on NotFoundException catch (e) {
         return Left(NotFoundFailure(message: e.message ?? 'Trip not found'));
+      } on NoInternetConnectionException catch (e) {
+        return Left(NetworkFailure(message: e.message ?? 'No internet connection'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }
@@ -48,7 +52,25 @@ class TripRepositoryImpl implements TripRepository {
       return Left(NetworkFailure(message: 'No internet connection'));
     }
   }
-  
+
+  @override
+  Future<Either<Failure, List<Trip>>> getTripsByRoute(int routeId, {String? date}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final trips = await dataSource.getTripsByRoute(routeId, date: date);
+        return Right(trips);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message ?? 'Server error'));
+      } on NoInternetConnectionException catch (e) {
+        return Left(NetworkFailure(message: e.message ?? 'No internet connection'));
+      } catch (e) {
+        return Left(ServerFailure(message: e.toString()));
+      }
+    } else {
+      return Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+
   @override
   Future<Either<Failure, void>> updateTripStatus({
     required int tripId,
@@ -68,7 +90,9 @@ class TripRepositoryImpl implements TripRepository {
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message ?? 'Server error'));
       } on UnauthorizedException catch (e) {
-        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
+        return Left(AuthenticationFailure(message: e.message ?? 'Unauthorized'));
+      } on NoInternetConnectionException catch (e) {
+        return Left(NetworkFailure(message: e.message ?? 'No internet connection'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }
@@ -76,7 +100,7 @@ class TripRepositoryImpl implements TripRepository {
       return Left(NetworkFailure(message: 'No internet connection'));
     }
   }
-  
+
   @override
   Future<Either<Failure, void>> updateVehicleLocation({
     required int tripId,
@@ -98,7 +122,9 @@ class TripRepositoryImpl implements TripRepository {
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message ?? 'Server error'));
       } on UnauthorizedException catch (e) {
-        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
+        return Left(AuthenticationFailure(message: e.message ?? 'Unauthorized'));
+      } on NoInternetConnectionException catch (e) {
+        return Left(NetworkFailure(message: e.message ?? 'No internet connection'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }

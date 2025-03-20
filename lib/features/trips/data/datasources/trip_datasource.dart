@@ -1,24 +1,18 @@
-import '../../../../core/error/exceptions.dart';
+import 'package:daladala_smart_app/features/trips/domains/entities/trip.dart';
+
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/utils/constants.dart';
 import '../models/trip_model.dart';
 
 abstract class TripDataSource {
-  /// Get upcoming trips
-  Future<List<TripModel>> getUpcomingTrips({int? routeId});
-  
-  /// Get trip details
-  Future<TripModel> getTripDetails(int tripId);
-  
-  /// Update trip status (for driver)
+  Future<List<Trip>> getUpcomingTrips({int? routeId});
+  Future<Trip> getTripDetails(int tripId);
+  Future<List<Trip>> getTripsByRoute(int routeId, {String? date});
   Future<void> updateTripStatus({
     required int tripId,
     required String status,
     int? currentStopId,
     int? nextStopId,
   });
-  
-  /// Update vehicle location (for driver)
   Future<void> updateVehicleLocation({
     required int tripId,
     required double latitude,
@@ -30,48 +24,58 @@ abstract class TripDataSource {
 
 class TripDataSourceImpl implements TripDataSource {
   final DioClient dioClient;
-  
+
   TripDataSourceImpl({required this.dioClient});
-  
+
   @override
-  Future<List<TripModel>> getUpcomingTrips({int? routeId}) async {
+  Future<List<Trip>> getUpcomingTrips({int? routeId}) async {
     try {
-      final Map<String, dynamic>? queryParameters = routeId != null ? {'route_id': routeId} : null;
-      
-      final response = await dioClient.get(
-        '${AppConstants.tripsEndpoint}/upcoming',
-        queryParameters: queryParameters,
-      );
+      final queryParams = routeId != null ? {'route_id': routeId} : null;
+      final response = await dioClient.get('/trips/upcoming', queryParameters: queryParams);
       
       if (response['status'] == 'success') {
-        return (response['data'] as List)
-            .map((trip) => TripModel.fromJson(trip))
-            .toList();
+        final List<dynamic> tripsList = response['data'];
+        return tripsList.map((tripData) => TripModel.fromJson(tripData)).toList();
       } else {
-        throw ServerException(message: response['message']);
+        throw Exception(response['message'] ?? 'Failed to get upcoming trips');
       }
     } catch (e) {
       rethrow;
     }
   }
-  
+
   @override
-  Future<TripModel> getTripDetails(int tripId) async {
+  Future<Trip> getTripDetails(int tripId) async {
     try {
-      final response = await dioClient.get(
-        '${AppConstants.tripsEndpoint}/$tripId',
-      );
+      final response = await dioClient.get('/trips/$tripId');
       
       if (response['status'] == 'success') {
         return TripModel.fromJson(response['data']['trip']);
       } else {
-        throw ServerException(message: response['message']);
+        throw Exception(response['message'] ?? 'Failed to get trip details');
       }
     } catch (e) {
       rethrow;
     }
   }
-  
+
+  @override
+  Future<List<Trip>> getTripsByRoute(int routeId, {String? date}) async {
+    try {
+      final queryParams = date != null ? {'date': date} : null;
+      final response = await dioClient.get('/trips/route/$routeId', queryParameters: queryParams);
+      
+      if (response['status'] == 'success') {
+        final List<dynamic> tripsList = response['data'];
+        return tripsList.map((tripData) => TripModel.fromJson(tripData)).toList();
+      } else {
+        throw Exception(response['message'] ?? 'Failed to get trips by route');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   @override
   Future<void> updateTripStatus({
     required int tripId,
@@ -82,29 +86,20 @@ class TripDataSourceImpl implements TripDataSource {
     try {
       final data = {
         'status': status,
+        if (currentStopId != null) 'current_stop_id': currentStopId,
+        if (nextStopId != null) 'next_stop_id': nextStopId,
       };
       
-      if (currentStopId != null) {
-        data['current_stop_id'] = currentStopId.toString();
-      }
-      
-      if (nextStopId != null) {
-        data['next_stop_id'] = nextStopId.toString();
-      }
-      
-      final response = await dioClient.put(
-        '${AppConstants.tripsEndpoint}/driver/$tripId/status',
-        data: data,
-      );
+      final response = await dioClient.put('/trips/driver/$tripId/status', data: data);
       
       if (response['status'] != 'success') {
-        throw ServerException(message: response['message']);
+        throw Exception(response['message'] ?? 'Failed to update trip status');
       }
     } catch (e) {
       rethrow;
     }
   }
-  
+
   @override
   Future<void> updateVehicleLocation({
     required int tripId,
@@ -117,23 +112,14 @@ class TripDataSourceImpl implements TripDataSource {
       final data = {
         'latitude': latitude,
         'longitude': longitude,
+        if (heading != null) 'heading': heading,
+        if (speed != null) 'speed': speed,
       };
       
-      if (heading != null) {
-        data['heading'] = heading;
-      }
-      
-      if (speed != null) {
-        data['speed'] = speed;
-      }
-      
-      final response = await dioClient.post(
-        '${AppConstants.tripsEndpoint}/driver/$tripId/location',
-        data: data,
-      );
+      final response = await dioClient.post('/trips/driver/$tripId/location', data: data);
       
       if (response['status'] != 'success') {
-        throw ServerException(message: response['message']);
+        throw Exception(response['message'] ?? 'Failed to update vehicle location');
       }
     } catch (e) {
       rethrow;
