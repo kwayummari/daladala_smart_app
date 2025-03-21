@@ -31,7 +31,7 @@ dependencies:
   carousel_slider: ^4.2.1
   get_it: ^7.6.0
   image_picker: ^1.0.4
-  permission_handler: ^10.4.5
+  permission_handler: ^11.4.0
   connectivity_plus: ^4.0.2
   geolocator: ^13.0.3
   geocoding: ^2.1.0
