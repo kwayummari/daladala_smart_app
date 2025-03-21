@@ -120,9 +120,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     children: [
                       // App logo
                       Image.asset(
-                        'assets/images/logo.png',
-                        width: 120,
-                        height: 120,
+                        'assets/images/splash_logo.png',
+                        width: 400,
+                        height: 400,
                       ),
                       const SizedBox(height: 24),
                       Text(
