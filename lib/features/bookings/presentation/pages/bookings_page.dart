@@ -16,39 +16,46 @@ class BookingsPage extends StatefulWidget {
   State<BookingsPage> createState() => _BookingsPageState();
 }
 
-class _BookingsPageState extends State<BookingsPage> with AutomaticKeepAliveClientMixin {
+class _BookingsPageState extends State<BookingsPage>
+    with AutomaticKeepAliveClientMixin {
   bool _isInitialized = false;
   String _selectedFilter = 'all';
-  
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     if (!_isInitialized) {
       _loadBookings();
       _isInitialized = true;
     }
   }
-  
+
   Future<void> _loadBookings() async {
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    final bookingProvider = Provider.of<BookingProvider>(
+      context,
+      listen: false,
+    );
     await bookingProvider.getUserBookings();
   }
-  
+
   Future<void> _refreshBookings() async {
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    final bookingProvider = Provider.of<BookingProvider>(
+      context,
+      listen: false,
+    );
     await bookingProvider.getUserBookings(
       status: _selectedFilter == 'all' ? null : _selectedFilter,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Bookings'),
@@ -84,33 +91,32 @@ class _BookingsPageState extends State<BookingsPage> with AutomaticKeepAliveClie
               ),
             ),
           ),
-          
+
           // Booking list
           Expanded(
             child: Consumer<BookingProvider>(
               builder: (context, bookingProvider, child) {
                 if (bookingProvider.isLoading) {
-                  return const Center(
-                    child: LoadingIndicator(),
-                  );
+                  return const Center(child: LoadingIndicator());
                 }
-                
+
                 if (bookingProvider.error != null) {
                   return GenericErrorView(
                     message: bookingProvider.error,
                     onRetry: _refreshBookings,
                   );
                 }
-                
+
                 final bookings = bookingProvider.bookings;
-                
+
                 if (bookings == null || bookings.isEmpty) {
                   return EmptyState(
                     title: 'No Bookings Found',
-                    message: _selectedFilter == 'all'
-                        ? 'You don\'t have any bookings yet.'
-                        : 'You don\'t have any ${_selectedFilter.replaceAll('_', ' ')} bookings.',
-                    lottieAsset: 'assets/animations/empty_bookings.json',
+                    message:
+                        _selectedFilter == 'all'
+                            ? 'You don\'t have any bookings yet.'
+                            : 'You don\'t have any ${_selectedFilter.replaceAll('_', ' ')} bookings.',
+                    lottieAsset: 'assets/animations/empty_trips.json',
                     buttonText: 'Book a Trip',
                     onButtonPressed: () {
                       // Navigate to route search or home
@@ -118,7 +124,7 @@ class _BookingsPageState extends State<BookingsPage> with AutomaticKeepAliveClie
                     },
                   );
                 }
-                
+
                 return RefreshIndicator(
                   onRefresh: _refreshBookings,
                   color: AppTheme.primaryColor,
@@ -133,7 +139,9 @@ class _BookingsPageState extends State<BookingsPage> with AutomaticKeepAliveClie
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => BookingDetailPage(bookingId: booking.id),
+                              builder:
+                                  (_) =>
+                                      BookingDetailPage(bookingId: booking.id),
                             ),
                           );
                         },
@@ -148,10 +156,10 @@ class _BookingsPageState extends State<BookingsPage> with AutomaticKeepAliveClie
       ),
     );
   }
-  
+
   Widget _buildFilterTab(String filter, String label) {
     final isSelected = _selectedFilter == filter;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
@@ -160,7 +168,10 @@ class _BookingsPageState extends State<BookingsPage> with AutomaticKeepAliveClie
             _selectedFilter = filter;
           });
           // Reload bookings with filter
-          final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+          final bookingProvider = Provider.of<BookingProvider>(
+            context,
+            listen: false,
+          );
           bookingProvider.getUserBookings(
             status: filter == 'all' ? null : filter,
           );
@@ -192,21 +203,20 @@ class _BookingCard extends StatelessWidget {
   final Booking booking;
   final VoidCallback onTap;
 
-  const _BookingCard({
-    Key? key,
-    required this.booking,
-    required this.onTap,
-  }) : super(key: key);
+  const _BookingCard({Key? key, required this.booking, required this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Format date
-    final formattedDate = DateFormat('dd MMM yyyy, HH:mm').format(booking.bookingTime);
-    
+    final formattedDate = DateFormat(
+      'dd MMM yyyy, HH:mm',
+    ).format(booking.bookingTime);
+
     // Define status color
     Color statusColor;
     IconData statusIcon;
-    
+
     switch (booking.status) {
       case 'pending':
         statusColor = AppTheme.pendingColor;
@@ -232,7 +242,7 @@ class _BookingCard extends StatelessWidget {
         statusColor = AppTheme.pendingColor;
         statusIcon = Icons.hourglass_empty;
     }
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -263,11 +273,7 @@ class _BookingCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    statusIcon,
-                    size: 18,
-                    color: statusColor,
-                  ),
+                  Icon(statusIcon, size: 18, color: statusColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -288,7 +294,7 @@ class _BookingCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Booking details
             Padding(
               padding: const EdgeInsets.all(16),
@@ -306,15 +312,13 @@ class _BookingCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         formattedDate,
-                        style: TextStyle(
-                          color: AppTheme.textSecondaryColor,
-                        ),
+                        style: TextStyle(color: AppTheme.textSecondaryColor),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Trip info
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,16 +346,14 @@ class _BookingCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       // Passenger count and fare
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
                             '${booking.passengerCount} ${booking.passengerCount > 1 ? 'Passengers' : 'Passenger'}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -365,9 +367,9 @@ class _BookingCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Payment status and view button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -378,27 +380,31 @@ class _BookingCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: booking.paymentStatus == 'paid'
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
+                          color:
+                              booking.paymentStatus == 'paid'
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           booking.paymentStatus.toUpperCase(),
                           style: TextStyle(
-                            color: booking.paymentStatus == 'paid'
-                                ? Colors.green
-                                : Colors.orange,
+                            color:
+                                booking.paymentStatus == 'paid'
+                                    ? Colors.green
+                                    : Colors.orange,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                      
+
                       TextButton(
                         onPressed: onTap,
                         style: TextButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                          backgroundColor: AppTheme.primaryColor.withOpacity(
+                            0.1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
