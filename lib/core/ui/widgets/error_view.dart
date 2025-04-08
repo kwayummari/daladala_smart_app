@@ -11,13 +11,13 @@ class ErrorView extends StatelessWidget {
   final VoidCallback? onRetry;
 
   const ErrorView({
-    Key? key,
+    super.key,
     this.title = 'Oops!',
     required this.message,
     this.lottieAsset,
     this.buttonText = 'Try Again',
     this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +94,9 @@ class ServerErrorView extends StatelessWidget {
   final VoidCallback? onRetry;
 
   const ServerErrorView({
-    Key? key,
+    super.key,
     this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

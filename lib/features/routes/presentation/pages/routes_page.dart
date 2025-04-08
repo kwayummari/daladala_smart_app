@@ -9,7 +9,7 @@ import '../widgets/route_card.dart';
 import 'route_detail_page.dart';
 
 class RoutesPage extends StatefulWidget {
-  const RoutesPage({Key? key}) : super(key: key);
+  const RoutesPage({super.key});
 
   @override
   State<RoutesPage> createState() => _RoutesPageState();
@@ -26,7 +26,9 @@ class _RoutesPageState extends State<RoutesPage> with AutomaticKeepAliveClientMi
     super.didChangeDependencies();
     
     if (!_isInitialized) {
-      _loadRoutes();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+    _loadRoutes();
+  });
       _isInitialized = true;
     }
   }

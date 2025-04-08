@@ -31,7 +31,7 @@ class RouteModel extends TransportRoute {
       startPoint: json['start_point'],
       endPoint: json['end_point'],
       description: json['description'],
-      distanceKm: json['distance_km']?.toDouble(),
+      distanceKm: double.parse(json['distance_km'].toString()),
       estimatedTimeMinutes: json['estimated_time_minutes'],
       status: json['status'],
     );
