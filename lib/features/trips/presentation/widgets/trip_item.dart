@@ -17,7 +17,7 @@ class TripItem extends StatelessWidget {
   final VoidCallback onSelectTrip;
 
   const TripItem({
-    Key? key,
+    super.key,
     required this.id,
     required this.startTime,
     required this.vehicleType,
@@ -28,7 +28,7 @@ class TripItem extends StatelessWidget {
     required this.fare,
     required this.features,
     required this.onSelectTrip,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +166,8 @@ class TripItem extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             driverName,
@@ -176,21 +177,27 @@ class TripItem extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          RatingBarIndicator(
-                            rating: driverRating,
-                            itemBuilder:
-                                (context, _) =>
-                                    const Icon(Icons.star, color: Colors.amber),
-                            itemCount: 5,
-                            itemSize: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            driverRating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            children: [
+                              RatingBarIndicator(
+                                rating: driverRating,
+                                itemBuilder:
+                                    (context, _) => const Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                    ),
+                                itemCount: 5,
+                                itemSize: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                driverRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

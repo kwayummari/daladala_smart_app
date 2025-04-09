@@ -12,12 +12,12 @@ class TripSelectionPage extends StatefulWidget {
   final String to;
 
   const TripSelectionPage({
-    Key? key,
+    super.key,
     required this.routeId,
     required this.routeName,
     required this.from,
     required this.to,
-  }) : super(key: key);
+  });
 
   @override
   State<TripSelectionPage> createState() => _TripSelectionPageState();
