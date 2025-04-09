@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/home/presentation/pages/home_page.dart';
 import 'package:daladala_smart_app/features/payments/domain/entities/payment.dart';
 import 'package:daladala_smart_app/features/payments/presentation/providers/payment_provider.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +67,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
               buttonText: 'Book a Trip',
               onButtonPressed: () {
                 // Navigate to route search or home
-                Navigator.pop(context);
+                HomePage.navigateToRoutes();
               },
             );
           }

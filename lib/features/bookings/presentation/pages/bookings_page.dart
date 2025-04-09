@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/home/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -16,33 +17,34 @@ class BookingsPage extends StatefulWidget {
   State<BookingsPage> createState() => _BookingsPageState();
 }
 
-class _BookingsPageState extends State<BookingsPage> with SingleTickerProviderStateMixin {
+class _BookingsPageState extends State<BookingsPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _currentFilter;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabChange);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadBookings();
     });
   }
-  
+
   @override
   void dispose() {
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
   }
-  
+
   void _handleTabChange() {
     if (_tabController.indexIsChanging) {
       return;
     }
-    
+
     String? filter;
     switch (_tabController.index) {
       case 0:
@@ -58,7 +60,7 @@ class _BookingsPageState extends State<BookingsPage> with SingleTickerProviderSt
         filter = 'completed,cancelled'; // Past
         break;
     }
-    
+
     if (filter != _currentFilter) {
       setState(() {
         _currentFilter = filter;
@@ -66,12 +68,15 @@ class _BookingsPageState extends State<BookingsPage> with SingleTickerProviderSt
       _loadBookings();
     }
   }
-  
+
   Future<void> _loadBookings() async {
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    final bookingProvider = Provider.of<BookingProvider>(
+      context,
+      listen: false,
+    );
     await bookingProvider.getUserBookings(status: _currentFilter);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,32 +102,31 @@ class _BookingsPageState extends State<BookingsPage> with SingleTickerProviderSt
         child: Consumer<BookingProvider>(
           builder: (context, bookingProvider, child) {
             if (bookingProvider.isLoading) {
-              return const Center(
-                child: LoadingIndicator(),
-              );
+              return const Center(child: LoadingIndicator());
             }
-            
+
             if (bookingProvider.error != null) {
               return GenericErrorView(
                 message: bookingProvider.error,
                 onRetry: _loadBookings,
               );
             }
-            
+
             final bookings = bookingProvider.userBookings;
-            
+
             if (bookings == null || bookings.isEmpty) {
               return EmptyState(
                 title: 'No Bookings Found',
-                message: 'You don\'t have any bookings${_currentFilter != null ? ' in this category' : ''}.',
+                message:
+                    'You don\'t have any bookings${_currentFilter != null ? ' in this category' : ''}.',
                 lottieAsset: 'assets/animations/empty_list.json',
                 buttonText: 'Book a Trip',
                 onButtonPressed: () {
-                  // Navigate to route search page
+                  HomePage.navigateToRoutes();
                 },
               );
             }
-            
+
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: bookings.length,
@@ -134,7 +138,8 @@ class _BookingsPageState extends State<BookingsPage> with SingleTickerProviderSt
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => BookingDetailPage(bookingId: booking.id),
+                        builder:
+                            (_) => BookingDetailPage(bookingId: booking.id),
                       ),
                     ).then((_) => _loadBookings());
                   },
@@ -152,22 +157,19 @@ class _BookingItem extends StatelessWidget {
   final Booking booking;
   final VoidCallback onTap;
 
-  const _BookingItem({
-    Key? key,
-    required this.booking,
-    required this.onTap,
-  }) : super(key: key);
+  const _BookingItem({Key? key, required this.booking, required this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Format date and time
     final formattedDate = DateFormat('dd MMM yyyy').format(booking.bookingTime);
     final formattedTime = DateFormat('HH:mm').format(booking.bookingTime);
-    
+
     // Determine status color
     Color statusColor;
     IconData statusIcon;
-    
+
     switch (booking.status) {
       case 'pending':
         statusColor = AppTheme.pendingColor;
@@ -223,17 +225,12 @@ class _BookingItem extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    statusIcon,
-                    color: statusColor,
-                  ),
+                  Icon(statusIcon, color: statusColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Booking #${booking.id}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                   Container(
@@ -257,7 +254,7 @@ class _BookingItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Booking details
             Padding(
               padding: const EdgeInsets.all(16),
@@ -275,33 +272,37 @@ class _BookingItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Trip #${booking.tripId}',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                          ),
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ),
                       Text(
                         '$formattedDate at $formattedTime',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // From -> To info
                   Row(
                     children: [
                       Column(
                         children: [
-                          const Icon(Icons.circle_outlined, size: 12, color: Colors.green),
+                          const Icon(
+                            Icons.circle_outlined,
+                            size: 12,
+                            color: Colors.green,
+                          ),
                           Container(
                             width: 1,
                             height: 16,
                             color: Colors.grey.shade300,
                           ),
-                          const Icon(Icons.location_on_outlined, size: 12, color: Colors.red),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 12,
+                            color: Colors.red,
+                          ),
                         ],
                       ),
                       const SizedBox(width: 8),
@@ -352,17 +353,13 @@ class _BookingItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Bottom action button
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.grey.shade200,
-                  ),
-                ),
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
               ),
               child: Text(
                 'View Details',
