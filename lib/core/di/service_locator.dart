@@ -1,5 +1,11 @@
 import 'package:daladala_smart_app/features/bookings/domain/usecases/cancel_booking_usecase.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/get_booking_details_usecase.dart';
+import 'package:daladala_smart_app/features/trips/data/datasources/trip_datasource.dart';
+import 'package:daladala_smart_app/features/trips/data/repositories/trip_repository_impl.dart';
+import 'package:daladala_smart_app/features/trips/domains/repositories/trip_repository.dart';
+import 'package:daladala_smart_app/features/trips/domains/usecases/get_trip_details_usecase.dart';
+import 'package:daladala_smart_app/features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
+import 'package:daladala_smart_app/features/trips/presentation/providers/trip_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
@@ -205,4 +211,31 @@ Future<void> setupServiceLocator() async {
       getPaymentHistoryUseCase: getIt<GetPaymentHistoryUseCase>(),
     )
   );
+
+  // Trip module registration
+getIt.registerSingleton<TripDataSource>(
+  TripDataSourceImpl(dioClient: getIt<DioClient>())
+);
+
+getIt.registerSingleton<TripRepository>(
+  TripRepositoryImpl(
+    dataSource: getIt<TripDataSource>(),
+    networkInfo: getIt<NetworkInfo>(),
+  )
+);
+
+getIt.registerSingleton<GetUpcomingTripsUseCase>(
+  GetUpcomingTripsUseCase(repository: getIt<TripRepository>())
+);
+
+getIt.registerSingleton<GetTripDetailsUseCase>(
+  GetTripDetailsUseCase(repository: getIt<TripRepository>())
+);
+
+getIt.registerFactory<TripProvider>(
+  () => TripProvider(
+    getUpcomingTripsUseCase: getIt<GetUpcomingTripsUseCase>(),
+    getTripDetailsUseCase: getIt<GetTripDetailsUseCase>(),
+  )
+);
 }
