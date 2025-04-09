@@ -10,37 +10,35 @@ class BookingProvider extends ChangeNotifier {
   final GetUserBookingsUseCase getUserBookingsUseCase;
   final GetBookingDetailsUseCase? getBookingDetailsUseCase;
   final CancelBookingUseCase? cancelBookingUseCase;
-  
+
   BookingProvider({
     required this.createBookingUseCase,
     required this.getUserBookingsUseCase,
     this.getBookingDetailsUseCase,
     this.cancelBookingUseCase,
   });
-  
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
-  
+
   List<Booking>? _bookings;
   List<Booking>? get bookings => _bookings;
-  
+
   Booking? _currentBooking;
   Booking? get currentBooking => _currentBooking;
-  
+
   String? _error;
   String? get error => _error;
-  
+
   // Load user bookings
-  Future<void> getUserBookings({
-    String? status,
-  }) async {
+  Future<void> getUserBookings({String? status}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     final params = GetUserBookingsParams(status: status);
     final result = await getUserBookingsUseCase(params);
-    
+
     result.fold(
       (failure) {
         _error = failure.message;
@@ -49,11 +47,11 @@ class BookingProvider extends ChangeNotifier {
         _bookings = bookings;
       },
     );
-    
+
     _isLoading = false;
     notifyListeners();
   }
-  
+
   // Create booking
   Future<void> createBooking({
     required int tripId,
@@ -64,16 +62,16 @@ class BookingProvider extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     final params = CreateBookingParams(
       tripId: tripId,
       pickupStopId: pickupStopId,
       dropoffStopId: dropoffStopId,
       passengerCount: passengerCount,
     );
-    
+
     final result = await createBookingUseCase(params);
-    
+
     result.fold(
       (failure) {
         _error = failure.message;
@@ -87,11 +85,11 @@ class BookingProvider extends ChangeNotifier {
         }
       },
     );
-    
+
     _isLoading = false;
     notifyListeners();
   }
-  
+
   // Get booking details
   Future<void> getBookingDetails(int bookingId) async {
     if (getBookingDetailsUseCase == null) {
@@ -99,14 +97,14 @@ class BookingProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     final params = GetBookingDetailsParams(bookingId: bookingId);
     final result = await getBookingDetailsUseCase!(params);
-    
+
     result.fold(
       (failure) {
         _error = failure.message;
@@ -115,11 +113,11 @@ class BookingProvider extends ChangeNotifier {
         _currentBooking = booking;
       },
     );
-    
+
     _isLoading = false;
     notifyListeners();
   }
-  
+
   // Cancel booking
   Future<void> cancelBooking(int bookingId) async {
     if (cancelBookingUseCase == null) {
@@ -127,14 +125,14 @@ class BookingProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     final params = CancelBookingParams(bookingId: bookingId);
     final result = await cancelBookingUseCase!(params);
-    
+
     result.fold(
       (failure) {
         _error = failure.message;
@@ -142,11 +140,15 @@ class BookingProvider extends ChangeNotifier {
       (_) {
         // Update the booking status in the list
         if (_bookings != null) {
-          final index = _bookings!.indexWhere((booking) => booking.id == bookingId);
+          final index = _bookings!.indexWhere(
+            (booking) => booking.id == bookingId,
+          );
           if (index != -1) {
-            final updatedBooking = _bookings![index].copyWith(status: 'cancelled');
+            final updatedBooking = _bookings![index].copyWith(
+              status: 'cancelled',
+            );
             _bookings![index] = updatedBooking;
-            
+
             if (_currentBooking?.id == bookingId) {
               _currentBooking = updatedBooking;
             }
@@ -154,17 +156,17 @@ class BookingProvider extends ChangeNotifier {
         }
       },
     );
-    
+
     _isLoading = false;
     notifyListeners();
   }
-  
+
   // Clear current booking
   void clearCurrentBooking() {
     _currentBooking = null;
     notifyListeners();
   }
-  
+
   // Clear error
   void clearError() {
     _error = null;
