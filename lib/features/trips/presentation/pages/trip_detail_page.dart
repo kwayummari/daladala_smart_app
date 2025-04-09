@@ -2,6 +2,7 @@ import 'package:daladala_smart_app/features/reviews/presentation/pages/add_revie
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
 
@@ -481,7 +482,26 @@ class _TripDetailPageState extends State<TripDetailPage> {
                           child: IconButton(
                             icon: const Icon(Icons.share),
                             onPressed: () {
-                              // Share trip
+                              // Format the trip details for sharing
+                              final String tripDetails = """
+Trip Details - Daladala Smart
+
+Route: ${_tripData!['route_name']}
+From: ${_tripData!['start_point']}
+To: ${_tripData!['end_point']}
+Date: ${DateFormat('EEE, d MMM yyyy').format(_tripData!['start_time'])}
+Time: ${DateFormat('HH:mm').format(_tripData!['start_time'])}
+Vehicle: ${_tripData!['vehicle_plate']}
+
+Track this trip live with Daladala Smart app!
+""";
+
+                              // Share the trip details
+                              Share.share(
+                                tripDetails,
+                                subject:
+                                    'My Daladala Trip - ${_tripData!['route_name']}',
+                              );
                             },
                           ),
                         ),
