@@ -16,7 +16,7 @@ class CustomButton extends StatelessWidget {
   final TextStyle? textStyle;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.type = ButtonType.primary,
@@ -28,7 +28,7 @@ class CustomButton extends StatelessWidget {
     this.borderRadius = 10,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
     this.textStyle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -12,7 +12,7 @@ class WalletPage extends StatefulWidget {
 class _WalletPageState extends State<WalletPage> {
   bool _isLoading = true;
   double _balance = 25000.0;
-  
+
   // Sample transaction data
   final List<Map<String, dynamic>> _transactions = [
     {
@@ -51,17 +51,17 @@ class _WalletPageState extends State<WalletPage> {
       'description': 'Trip payment: Kimara - CBD',
     },
   ];
-  
+
   @override
   void initState() {
     super.initState();
     _loadWalletData();
   }
-  
+
   Future<void> _loadWalletData() async {
     // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
-    
+
     setState(() {
       _isLoading = false;
     });
@@ -75,202 +75,212 @@ class _WalletPageState extends State<WalletPage> {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Balance Card
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withOpacity(0.8),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Balance Card
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primaryColor,
+                            AppTheme.primaryColor.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
                         ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Daladala Wallet',
-                              style: TextStyle(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Daladala Wallet',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Icon(
+                                Icons.account_balance_wallet,
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Balance',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
                             ),
-                            Icon(
-                              Icons.account_balance_wallet,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "TZS ${_balance.toStringAsFixed(0)}",
+                            style: const TextStyle(
                               color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Balance',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "TZS ${_balance.toStringAsFixed(0)}",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CustomButton(
+                                  text: 'Top Up',
+                                  icon: Icons.add,
+                                  onPressed: () {
+                                    // Show top up options
+                                    _showTopUpOptions();
+                                  },
+                                  type: ButtonType.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: CustomButton(
+                                  text: 'Transfer',
+                                  icon: Icons.send,
+                                  onPressed: () {
+                                    // Navigate to transfer page
+                                  },
+                                  type: ButtonType.primary,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomButton(
-                                text: 'Top Up',
-                                icon: Icons.add,
-                                onPressed: () {
-                                  // Show top up options
-                                  _showTopUpOptions();
-                                },
-                                type: ButtonType.secondary,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomButton(
-                                text: 'Transfer',
-                                icon: Icons.send,
-                                onPressed: () {
-                                  // Navigate to transfer page
-                                },
-                                type: ButtonType.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Transaction history
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Transaction History',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        ],
                       ),
                     ),
-                  ),
-                  
-                  // List of transactions
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _transactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = _transactions[index];
-                      final isTopUp = transaction['type'] == 'topup';
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            // Icon
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isTopUp
-                                    ? AppTheme.successColor.withOpacity(0.1)
-                                    : AppTheme.warningColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
+
+                    // Transaction history
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Transaction History',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+
+                    // List of transactions
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _transactions.length,
+                      itemBuilder: (context, index) {
+                        final transaction = _transactions[index];
+                        final isTopUp = transaction['type'] == 'topup';
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
-                              child: Icon(
-                                isTopUp ? Icons.add : Icons.shopping_cart,
-                                color: isTopUp
-                                    ? AppTheme.successColor
-                                    : AppTheme.warningColor,
-                                size: 20,
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Icon
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isTopUp
+                                          ? AppTheme.successColor.withOpacity(
+                                            0.1,
+                                          )
+                                          : AppTheme.warningColor.withOpacity(
+                                            0.1,
+                                          ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isTopUp ? Icons.add : Icons.shopping_cart,
+                                  color:
+                                      isTopUp
+                                          ? AppTheme.successColor
+                                          : AppTheme.warningColor,
+                                  size: 20,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            
-                            // Details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    transaction['description'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
+                              const SizedBox(width: 12),
+
+                              // Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      transaction['description'],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    transaction['date'].toString().substring(0, 10),
-                                    style: TextStyle(
-                                      color: AppTheme.textTertiaryColor,
-                                      fontSize: 12,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      transaction['date'].toString().substring(
+                                        0,
+                                        10,
+                                      ),
+                                      style: TextStyle(
+                                        color: AppTheme.textTertiaryColor,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            
-                            // Amount
-                            Text(
-                              '${isTopUp ? '+' : '-'} TZS ${transaction['amount'].toStringAsFixed(0)}',
-                              style: TextStyle(
-                                color: isTopUp
-                                    ? AppTheme.successColor
-                                    : AppTheme.warningColor,
-                                fontWeight: FontWeight.w600,
+
+                              // Amount
+                              Text(
+                                '${isTopUp ? '+' : '-'} TZS ${transaction['amount'].toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  color:
+                                      isTopUp
+                                          ? AppTheme.successColor
+                                          : AppTheme.warningColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
     );
   }
-  
+
   void _showTopUpOptions() {
     showModalBottomSheet(
       context: context,
@@ -286,9 +296,9 @@ class _WalletPageState extends State<WalletPage> {
             children: [
               Text(
                 'Top Up Wallet',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -296,7 +306,7 @@ class _WalletPageState extends State<WalletPage> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
-              
+
               // Payment options
               _PaymentOptionItem(
                 icon: Icons.phone_android,
@@ -371,10 +381,7 @@ class _PaymentOptionItem extends StatelessWidget {
                 color: AppTheme.primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                color: AppTheme.primaryColor,
-              ),
+              child: Icon(icon, color: AppTheme.primaryColor),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -383,9 +390,7 @@ class _PaymentOptionItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
