@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
 import '../../../../core/ui/widgets/loading_indicator.dart';
@@ -59,35 +64,74 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
     });
   }
 
-  void _shareReceipt() {
-    // Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Receipt shared successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _shareReceipt() async {
+    final receiptText = '''
+Payment Receipt
+-------------------
+Transaction ID: ${_paymentData['transactionId']}
+Amount: ${_paymentData['amount']} ${_paymentData['currency']}
+Status: ${_paymentData['status']}
+Method: ${_getFormattedPaymentMethod(_paymentData['paymentMethod'])}
+Route: ${_paymentData['trip']['routeName']}
+From: ${_paymentData['trip']['from']}
+To: ${_paymentData['trip']['to']}
+Date: ${DateFormat('dd MMM yyyy, HH:mm').format(_paymentData['paymentTime'])}
+  ''';
+
+    Share.share(receiptText);
   }
 
   Future<void> _downloadReceipt() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    // Simulate download delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (mounted) {
+    final status = await Permission.storage.request();
+    if (!status.isGranted) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Receipt downloaded successfully'),
+          content: Text('Storage permission denied'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final directory = await getExternalStorageDirectory();
+      final path = directory?.path ?? '/storage/emulated/0/Download';
+      final fileName = 'receipt_${_paymentData['transactionId']}.txt';
+      final file = File('$path/$fileName');
+
+      final receiptText = '''
+Payment Receipt
+-------------------
+Transaction ID: ${_paymentData['transactionId']}
+Amount: ${_paymentData['amount']} ${_paymentData['currency']}
+Status: ${_paymentData['status']}
+Method: ${_getFormattedPaymentMethod(_paymentData['paymentMethod'])}
+Route: ${_paymentData['trip']['routeName']}
+From: ${_paymentData['trip']['from']}
+To: ${_paymentData['trip']['to']}
+Date: ${DateFormat('dd MMM yyyy, HH:mm').format(_paymentData['paymentTime'])}
+    ''';
+
+      await file.writeAsString(receiptText);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Receipt saved to $fileName'),
           backgroundColor: Colors.green,
         ),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to download receipt'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -103,7 +147,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
       );
     }
   }
-  
+
   // Add the missing _getStatusColor method
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
