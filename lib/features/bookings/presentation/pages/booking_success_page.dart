@@ -19,7 +19,7 @@ class BookingSuccessPage extends StatelessWidget {
   final String paymentMethod;
 
   const BookingSuccessPage({
-    Key? key,
+    super.key,
     required this.bookingId,
     required this.tripId,
     required this.routeName,
@@ -29,7 +29,7 @@ class BookingSuccessPage extends StatelessWidget {
     required this.amount,
     required this.passengerCount,
     required this.paymentMethod,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +287,7 @@ class BookingSuccessPage extends StatelessWidget {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const HomePage(),
+                            builder: (_) =>  HomePage(),
                           ),
                           (route) => false,
                         );

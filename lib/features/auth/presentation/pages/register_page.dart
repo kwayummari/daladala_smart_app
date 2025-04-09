@@ -8,7 +8,7 @@ import '../providers/auth_provider.dart';
 import '../../../home/presentation/pages/home_page.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -68,7 +68,7 @@ class _RegisterPageState extends State<RegisterPage> {
           (user) {
             // Navigate to home page
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const HomePage()),
+              MaterialPageRoute(builder: (_) =>  HomePage()),
               (route) => false,
             );
           },

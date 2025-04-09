@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/home/presentation/pages/home_page.dart';
 import 'package:daladala_smart_app/features/trips/domains/entities/trip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -100,12 +101,12 @@ class _TripsPageState extends State<TripsPage>
                 if (trips == null || trips.isEmpty) {
                   return EmptyState(
                     title: 'No Trips Found',
-                    message: 'You don\'t have any ${_selectedFilter} trips.',
+                    message: 'You don\'t have any $_selectedFilter trips.',
                     lottieAsset: 'assets/animations/empty_trips.json',
                     buttonText: 'Book a Trip',
                     onButtonPressed: () {
                       // Navigate to route search or home
-                      Navigator.pop(context);
+                      HomePage.navigateToRoutes();
                     },
                   );
                 }

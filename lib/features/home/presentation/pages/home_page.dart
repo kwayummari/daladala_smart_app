@@ -12,7 +12,21 @@ import '../widgets/home_upcoming_trips.dart';
 import '../widgets/home_quick_actions.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  // Add a global key to access the state from other widgets
+  static final GlobalKey<_HomePageState> homeKey = GlobalKey<_HomePageState>();
+  
+  // Updated constructor to use the global key
+   HomePage({Key? key}) : super(key: homeKey);
+
+  // Static method to navigate to routes page
+  static void navigateToRoutes() {
+    homeKey.currentState?.navigateToTab(1);
+  }
+
+  // Static method to navigate to any tab
+  static void navigateToTab(int index) {
+    homeKey.currentState?.navigateToTab(index);
+  }
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -43,11 +57,16 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
   
-  void _onItemTapped(int index) {
+  // Make this method public to allow access from static methods
+  void navigateToTab(int index) {
     setState(() {
       _currentIndex = index;
     });
     _pageController.jumpToPage(index);
+  }
+  
+  void _onItemTapped(int index) {
+    navigateToTab(index);
   }
 
   @override

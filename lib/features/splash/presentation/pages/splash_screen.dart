@@ -10,7 +10,7 @@ import '../../../../core/storage/local_storage.dart';
 import '../../../../core/di/service_locator.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         if (isLoggedIn) {
           // User is logged in, navigate to home
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomePage()),
+            MaterialPageRoute(builder: (_) => HomePage()),
           );
         } else {
           // User is not logged in, navigate to login

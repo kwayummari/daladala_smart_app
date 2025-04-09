@@ -10,7 +10,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../home/presentation/pages/home_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -51,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
           (user) {
             // Navigate to home page
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomePage()),
+              MaterialPageRoute(builder: (_) =>  HomePage()),
             );
           },
         );
