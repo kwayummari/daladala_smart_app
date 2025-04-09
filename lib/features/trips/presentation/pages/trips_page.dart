@@ -10,43 +10,46 @@ import '../providers/trip_provider.dart';
 import 'trip_detail_page.dart';
 
 class TripsPage extends StatefulWidget {
-  const TripsPage({Key? key}) : super(key: key);
+  const TripsPage({super.key});
 
   @override
   State<TripsPage> createState() => _TripsPageState();
 }
 
-class _TripsPageState extends State<TripsPage> with AutomaticKeepAliveClientMixin {
+class _TripsPageState extends State<TripsPage>
+    with AutomaticKeepAliveClientMixin {
   bool _isInitialized = false;
   String _selectedFilter = 'upcoming';
-  
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     if (!_isInitialized) {
-      _loadTrips();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadTrips();
+      });
       _isInitialized = true;
     }
   }
-  
+
   Future<void> _loadTrips() async {
     final tripProvider = Provider.of<TripProvider>(context, listen: false);
     await tripProvider.getUpcomingTrips();
   }
-  
+
   Future<void> _refreshTrips() async {
     final tripProvider = Provider.of<TripProvider>(context, listen: false);
     await tripProvider.getUpcomingTrips();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Trips'),
@@ -76,26 +79,24 @@ class _TripsPageState extends State<TripsPage> with AutomaticKeepAliveClientMixi
               ],
             ),
           ),
-          
+
           // Trip list
           Expanded(
             child: Consumer<TripProvider>(
               builder: (context, tripProvider, child) {
                 if (tripProvider.isLoading) {
-                  return const Center(
-                    child: LoadingIndicator(),
-                  );
+                  return const Center(child: LoadingIndicator());
                 }
-                
+
                 if (tripProvider.error != null) {
                   return GenericErrorView(
                     message: tripProvider.error,
                     onRetry: _refreshTrips,
                   );
                 }
-                
+
                 final trips = tripProvider.upcomingTrips;
-                
+
                 if (trips == null || trips.isEmpty) {
                   return EmptyState(
                     title: 'No Trips Found',
@@ -108,7 +109,7 @@ class _TripsPageState extends State<TripsPage> with AutomaticKeepAliveClientMixi
                     },
                   );
                 }
-                
+
                 return RefreshIndicator(
                   onRefresh: _refreshTrips,
                   color: AppTheme.primaryColor,
@@ -138,10 +139,10 @@ class _TripsPageState extends State<TripsPage> with AutomaticKeepAliveClientMixi
       ),
     );
   }
-  
+
   Widget _buildFilterTab(String filter, String label) {
     final isSelected = _selectedFilter == filter;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -163,7 +164,10 @@ class _TripsPageState extends State<TripsPage> with AutomaticKeepAliveClientMixi
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
+              color:
+                  isSelected
+                      ? AppTheme.primaryColor
+                      : AppTheme.textSecondaryColor,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
             textAlign: TextAlign.center,
@@ -178,18 +182,15 @@ class _TripCard extends StatelessWidget {
   final Trip trip;
   final VoidCallback onTap;
 
-  const _TripCard({
-    Key? key,
-    required this.trip,
-    required this.onTap,
-  }) : super(key: key);
+  const _TripCard({Key? key, required this.trip, required this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Format time
     final formattedDate = DateFormat('EEE, d MMM').format(trip.startTime);
     final formattedTime = DateFormat('HH:mm').format(trip.startTime);
-    
+
     // Define status color
     Color statusColor;
     switch (trip.status) {
@@ -208,7 +209,7 @@ class _TripCard extends StatelessWidget {
       default:
         statusColor = Colors.orange;
     }
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -289,7 +290,7 @@ class _TripCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Trip details
             Padding(
               padding: const EdgeInsets.all(12),
@@ -304,9 +305,7 @@ class _TripCard extends StatelessWidget {
                       children: [
                         Text(
                           formattedDate,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -319,7 +318,7 @@ class _TripCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Vehicle and driver
                   Expanded(
                     flex: 3,
@@ -329,9 +328,7 @@ class _TripCard extends StatelessWidget {
                         if (trip.vehiclePlate != null)
                           Text(
                             trip.vehiclePlate!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         const SizedBox(height: 4),
                         if (trip.driverName != null)
@@ -345,7 +342,7 @@ class _TripCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   // View button
                   TextButton(
                     onPressed: onTap,

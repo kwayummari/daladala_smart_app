@@ -27,30 +27,32 @@ class TripProvider extends ChangeNotifier {
   String? get error => _error;
   
   // Get upcoming trips
-  Future<Either<Failure, List<Trip>>> getUpcomingTrips({
-    int? routeId,
-  }) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-    
-    final params = GetUpcomingTripsParams(routeId: routeId);
-    final result = await getUpcomingTripsUseCase(params);
-    
-    result.fold(
-      (failure) {
-        _error = failure.message;
-      },
-      (trips) {
-        _upcomingTrips = trips;
-      },
-    );
-    
-    _isLoading = false;
-    notifyListeners();
-    
-    return result;
-  }
+  // In TripProvider
+Future<Either<Failure, List<Trip>>> getUpcomingTrips({
+  int? routeId,
+}) async {
+  // Set loading without notifying
+  _isLoading = true;
+  _error = null;
+  
+  final params = GetUpcomingTripsParams(routeId: routeId);
+  final result = await getUpcomingTripsUseCase(params);
+  
+  result.fold(
+    (failure) {
+      _error = failure.message;
+    },
+    (trips) {
+      _upcomingTrips = trips;
+    },
+  );
+  
+  // Update state once at the end
+  _isLoading = false;
+  notifyListeners();
+  
+  return result;
+}
   
   // Get trip details
   Future<Either<Failure, Trip>> getTripDetails(int tripId) async {
