@@ -483,18 +483,22 @@ class _TripDetailPageState extends State<TripDetailPage> {
                             icon: const Icon(Icons.share),
                             onPressed: () {
                               // Format the trip details for sharing
+                              final String googleMapsLink = "https://www.google.com/maps/search/?api=1&query=${_tripData!['current_location'].latitude},${_tripData!['current_location'].longitude}";
+
                               final String tripDetails = """
-Trip Details - Daladala Smart
+                              Trip Details - Daladala Smart
 
-Route: ${_tripData!['route_name']}
-From: ${_tripData!['start_point']}
-To: ${_tripData!['end_point']}
-Date: ${DateFormat('EEE, d MMM yyyy').format(_tripData!['start_time'])}
-Time: ${DateFormat('HH:mm').format(_tripData!['start_time'])}
-Vehicle: ${_tripData!['vehicle_plate']}
+                              Route: ${_tripData!['route_name']}
+                              From: ${_tripData!['start_point']}
+                              To: ${_tripData!['end_point']}
+                              Date: ${DateFormat('EEE, d MMM yyyy').format(_tripData!['start_time'])}
+                              Time: ${DateFormat('HH:mm').format(_tripData!['start_time'])}
+                              Vehicle: ${_tripData!['vehicle_plate']}
 
-Track this trip live with Daladala Smart app!
-""";
+                              Track my location: $googleMapsLink
+
+                              Track this trip live with Daladala Smart app!
+                              """;
 
                               // Share the trip details
                               Share.share(
