@@ -5,6 +5,7 @@ import '../../../../core/network/network_info.dart';
 import '../../domain/entities/booking.dart';
 import '../../domain/repositories/booking_repository.dart';
 import '../datasources/booking_datasource.dart';
+import '../models/booking_model.dart';
 
 class BookingRepositoryImpl implements BookingRepository {
   final BookingDataSource dataSource;
@@ -14,36 +15,6 @@ class BookingRepositoryImpl implements BookingRepository {
     required this.dataSource,
     required this.networkInfo,
   });
-  
-  @override
-  Future<Either<Failure, Booking>> createBooking({
-    required int tripId,
-    required int pickupStopId,
-    required int dropoffStopId,
-    required int passengerCount,
-  }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final booking = await dataSource.createBooking(
-          tripId: tripId,
-          pickupStopId: pickupStopId,
-          dropoffStopId: dropoffStopId,
-          passengerCount: passengerCount,
-        );
-        return Right(booking);
-      } on ServerException catch (e) {
-        return Left(ServerFailure(message: e.message ?? 'Server error'));
-      } on UnauthorizedException catch (e) {
-        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
-      } on BadRequestException catch (e) {
-        return Left(InputFailure(message: e.message ?? 'Invalid input'));
-      } catch (e) {
-        return Left(ServerFailure(message: e.toString()));
-      }
-    } else {
-      return Left(NetworkFailure(message: 'No internet connection'));
-    }
-  }
   
   @override
   Future<Either<Failure, List<Booking>>> getUserBookings({String? status}) async {
@@ -71,10 +42,40 @@ class BookingRepositoryImpl implements BookingRepository {
         return Right(booking);
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message ?? 'Server error'));
-      } on UnauthorizedException catch (e) {
-        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
       } on NotFoundException catch (e) {
         return Left(NotFoundFailure(message: e.message ?? 'Booking not found'));
+      } on UnauthorizedException catch (e) {
+        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
+      } catch (e) {
+        return Left(ServerFailure(message: e.toString()));
+      }
+    } else {
+      return Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+  
+  @override
+  Future<Either<Failure, Booking>> createBooking({
+    required int tripId,
+    required int pickupStopId,
+    required int dropoffStopId,
+    required int passengerCount,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final booking = await dataSource.createBooking(
+          tripId: tripId,
+          pickupStopId: pickupStopId,
+          dropoffStopId: dropoffStopId,
+          passengerCount: passengerCount,
+        );
+        return Right(booking);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message ?? 'Server error'));
+      } on BadRequestException catch (e) {
+        return Left(InputFailure(message: e.message ?? 'Invalid input'));
+      } on UnauthorizedException catch (e) {
+        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }
@@ -91,12 +92,12 @@ class BookingRepositoryImpl implements BookingRepository {
         return const Right(null);
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message ?? 'Server error'));
-      } on UnauthorizedException catch (e) {
-        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
       } on NotFoundException catch (e) {
         return Left(NotFoundFailure(message: e.message ?? 'Booking not found'));
       } on BadRequestException catch (e) {
-        return Left(InputFailure(message: e.message ?? 'Invalid request'));
+        return Left(InputFailure(message: e.message ?? 'Cannot cancel booking at this stage'));
+      } on UnauthorizedException catch (e) {
+        return Left(AuthenticationFailure(message: e.message ?? 'Authentication error'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }

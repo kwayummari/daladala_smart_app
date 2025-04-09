@@ -1,3 +1,5 @@
+import 'package:daladala_smart_app/features/bookings/domain/usecases/cancel_booking_usecase.dart';
+import 'package:daladala_smart_app/features/bookings/domain/usecases/get_booking_details_usecase.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
@@ -120,6 +122,8 @@ Future<void> setupServiceLocator() async {
   
   // Bookings Feature
   getIt.registerSingleton<BookingDataSource>(
+    // For debugging purposes, you can use the mock implementation
+    // MockBookingDataSource()
     BookingDataSourceImpl(dioClient: getIt<DioClient>())
   );
   
@@ -130,45 +134,28 @@ Future<void> setupServiceLocator() async {
     )
   );
   
-  getIt.registerSingleton<CreateBookingUseCase>(
-    CreateBookingUseCase(repository: getIt<BookingRepository>())
-  );
-  
   getIt.registerSingleton<GetUserBookingsUseCase>(
     GetUserBookingsUseCase(repository: getIt<BookingRepository>())
   );
   
+  getIt.registerSingleton<GetBookingDetailsUseCase>(
+    GetBookingDetailsUseCase(repository: getIt<BookingRepository>())
+  );
+  
+  getIt.registerSingleton<CreateBookingUseCase>(
+    CreateBookingUseCase(repository: getIt<BookingRepository>())
+  );
+  
+  getIt.registerSingleton<CancelBookingUseCase>(
+    CancelBookingUseCase(repository: getIt<BookingRepository>())
+  );
+  
   getIt.registerFactory<BookingProvider>(
     () => BookingProvider(
-      createBookingUseCase: getIt<CreateBookingUseCase>(),
+      getBookingDetailsUseCase: getIt<GetBookingDetailsUseCase>(),
       getUserBookingsUseCase: getIt<GetUserBookingsUseCase>(),
-    )
-  );
-  
-  // Trips Feature
-  getIt.registerSingleton<TripDataSource>(
-    TripDataSourceImpl(dioClient: getIt<DioClient>())
-  );
-  
-  getIt.registerSingleton<TripRepository>(
-    TripRepositoryImpl(
-      dataSource: getIt<TripDataSource>(),
-      networkInfo: getIt<NetworkInfo>(),
-    )
-  );
-  
-  getIt.registerSingleton<GetUpcomingTripsUseCase>(
-    GetUpcomingTripsUseCase(repository: getIt<TripRepository>())
-  );
-  
-  getIt.registerSingleton<GetTripDetailsUseCase>(
-    GetTripDetailsUseCase(repository: getIt<TripRepository>())
-  );
-  
-  getIt.registerFactory<TripProvider>(
-    () => TripProvider(
-      getUpcomingTripsUseCase: getIt<GetUpcomingTripsUseCase>(),
-      getTripDetailsUseCase: getIt<GetTripDetailsUseCase>(),
+      createBookingUseCase: getIt<CreateBookingUseCase>(),
+      cancelBookingUseCase: getIt<CancelBookingUseCase>(),
     )
   );
   

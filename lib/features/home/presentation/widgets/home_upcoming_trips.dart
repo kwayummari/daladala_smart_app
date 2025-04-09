@@ -5,7 +5,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../trips/presentation/pages/trip_detail_page.dart';
 
 class HomeUpcomingTrips extends StatefulWidget {
-  const HomeUpcomingTrips({Key? key}) : super(key: key);
+  const HomeUpcomingTrips({super.key});
 
   @override
   State<HomeUpcomingTrips> createState() => _HomeUpcomingTripsState();

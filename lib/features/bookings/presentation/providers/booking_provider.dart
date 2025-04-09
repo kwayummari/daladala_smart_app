@@ -1,59 +1,84 @@
 import 'package:flutter/foundation.dart';
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../../domain/entities/booking.dart';
-import '../../domain/usecases/create_booking_usecase.dart';
-import '../../domain/usecases/get_user_bookings_usecase.dart';
 import '../../domain/usecases/get_booking_details_usecase.dart';
+import '../../domain/usecases/get_user_bookings_usecase.dart';
+import '../../domain/usecases/create_booking_usecase.dart';
 import '../../domain/usecases/cancel_booking_usecase.dart';
 
 class BookingProvider extends ChangeNotifier {
-  final CreateBookingUseCase createBookingUseCase;
+  final GetBookingDetailsUseCase getBookingDetailsUseCase;
   final GetUserBookingsUseCase getUserBookingsUseCase;
-  final GetBookingDetailsUseCase? getBookingDetailsUseCase;
-  final CancelBookingUseCase? cancelBookingUseCase;
-
+  final CreateBookingUseCase createBookingUseCase;
+  final CancelBookingUseCase cancelBookingUseCase;
+  
   BookingProvider({
-    required this.createBookingUseCase,
+    required this.getBookingDetailsUseCase,
     required this.getUserBookingsUseCase,
-    this.getBookingDetailsUseCase,
-    this.cancelBookingUseCase,
+    required this.createBookingUseCase,
+    required this.cancelBookingUseCase,
   });
-
+  
   bool _isLoading = false;
   bool get isLoading => _isLoading;
-
-  List<Booking>? _bookings;
-  List<Booking>? get bookings => _bookings;
-
-  Booking? _currentBooking;
-  Booking? get currentBooking => _currentBooking;
-
+  
   String? _error;
   String? get error => _error;
-
-  // Load user bookings
+  
+  List<Booking>? _userBookings;
+  List<Booking>? get userBookings => _userBookings;
+  
+  Booking? _currentBooking;
+  Booking? get currentBooking => _currentBooking;
+  
   Future<void> getUserBookings({String? status}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
+    
     final params = GetUserBookingsParams(status: status);
     final result = await getUserBookingsUseCase(params);
-
+    
+    result.fold(
+      (failure) {
+        _error = failure.message;
+        _userBookings = null;
+      },
+      (bookings) {
+        _userBookings = bookings;
+        _error = null;
+      },
+    );
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+  
+  Future<void> getBookingDetails(int bookingId) async {
+    _isLoading = true;
+    _error = null;
+    _currentBooking = null;
+    notifyListeners();
+    
+    final params = GetBookingDetailsParams(bookingId: bookingId);
+    final result = await getBookingDetailsUseCase(params);
+    
     result.fold(
       (failure) {
         _error = failure.message;
       },
-      (bookings) {
-        _bookings = bookings;
+      (booking) {
+        _currentBooking = booking;
+        _error = null;
       },
     );
-
+    
     _isLoading = false;
     notifyListeners();
   }
-
-  // Create booking
-  Future<void> createBooking({
+  
+  Future<bool> createBooking({
     required int tripId,
     required int pickupStopId,
     required int dropoffStopId,
@@ -62,112 +87,76 @@ class BookingProvider extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
+    
     final params = CreateBookingParams(
       tripId: tripId,
       pickupStopId: pickupStopId,
       dropoffStopId: dropoffStopId,
       passengerCount: passengerCount,
     );
-
+    
     final result = await createBookingUseCase(params);
-
+    
+    bool success = false;
+    
     result.fold(
       (failure) {
         _error = failure.message;
       },
       (booking) {
         _currentBooking = booking;
-        if (_bookings != null) {
-          _bookings = [booking, ..._bookings!];
-        } else {
-          _bookings = [booking];
-        }
+        _error = null;
+        success = true;
       },
     );
-
+    
     _isLoading = false;
     notifyListeners();
+    
+    return success;
   }
-
-  // Get booking details
-  Future<void> getBookingDetails(int bookingId) async {
-    if (getBookingDetailsUseCase == null) {
-      _error = 'Feature not implemented';
-      notifyListeners();
-      return;
-    }
-
+  
+  Future<bool> cancelBooking(int bookingId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
-    final params = GetBookingDetailsParams(bookingId: bookingId);
-    final result = await getBookingDetailsUseCase!(params);
-
-    result.fold(
-      (failure) {
-        _error = failure.message;
-      },
-      (booking) {
-        _currentBooking = booking;
-      },
-    );
-
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  // Cancel booking
-  Future<void> cancelBooking(int bookingId) async {
-    if (cancelBookingUseCase == null) {
-      _error = 'Feature not implemented';
-      notifyListeners();
-      return;
-    }
-
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
+    
     final params = CancelBookingParams(bookingId: bookingId);
-    final result = await cancelBookingUseCase!(params);
-
+    final result = await cancelBookingUseCase(params);
+    
+    bool success = false;
+    
     result.fold(
       (failure) {
         _error = failure.message;
       },
       (_) {
-        // Update the booking status in the list
-        if (_bookings != null) {
-          final index = _bookings!.indexWhere(
-            (booking) => booking.id == bookingId,
-          );
+        // Update the current booking status if it's the one being cancelled
+        if (_currentBooking != null && _currentBooking!.id == bookingId) {
+          _currentBooking = _currentBooking!.copyWith(status: 'cancelled');
+        }
+        
+        // Also update in the list if available
+        if (_userBookings != null) {
+          final index = _userBookings!.indexWhere((b) => b.id == bookingId);
           if (index != -1) {
-            final updatedBooking = _bookings![index].copyWith(
-              status: 'cancelled',
-            );
-            _bookings![index] = updatedBooking;
-
-            if (_currentBooking?.id == bookingId) {
-              _currentBooking = updatedBooking;
-            }
+            final updatedBookings = List<Booking>.from(_userBookings!);
+            updatedBookings[index] = updatedBookings[index].copyWith(status: 'cancelled');
+            _userBookings = updatedBookings;
           }
         }
+        
+        _error = null;
+        success = true;
       },
     );
-
+    
     _isLoading = false;
     notifyListeners();
+    
+    return success;
   }
-
-  // Clear current booking
-  void clearCurrentBooking() {
-    _currentBooking = null;
-    notifyListeners();
-  }
-
-  // Clear error
+  
   void clearError() {
     _error = null;
     notifyListeners();

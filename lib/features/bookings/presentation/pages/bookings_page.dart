@@ -1,224 +1,173 @@
-import 'package:daladala_smart_app/features/bookings/domain/entities/booking.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../../core/ui/widgets/empty_state.dart';
+import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../../core/ui/widgets/error_view.dart';
 import '../providers/booking_provider.dart';
+import '../../domain/entities/booking.dart';
 import 'booking_detail_page.dart';
 
 class BookingsPage extends StatefulWidget {
-  const BookingsPage({super.key});
+  const BookingsPage({Key? key}) : super(key: key);
 
   @override
   State<BookingsPage> createState() => _BookingsPageState();
 }
 
-class _BookingsPageState extends State<BookingsPage>
-    with AutomaticKeepAliveClientMixin {
-  bool _isInitialized = false;
-  String _selectedFilter = 'all';
-
+class _BookingsPageState extends State<BookingsPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String? _currentFilter;
+  
   @override
-  bool get wantKeepAlive => true;
-
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_handleTabChange);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBookings();
+    });
+  }
+  
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (!_isInitialized) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadBookings();
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
+  }
+  
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) {
+      return;
+    }
+    
+    String? filter;
+    switch (_tabController.index) {
+      case 0:
+        filter = null; // All bookings
+        break;
+      case 1:
+        filter = 'pending,confirmed'; // Upcoming
+        break;
+      case 2:
+        filter = 'in_progress'; // Active
+        break;
+      case 3:
+        filter = 'completed,cancelled'; // Past
+        break;
+    }
+    
+    if (filter != _currentFilter) {
+      setState(() {
+        _currentFilter = filter;
       });
-      _isInitialized = true;
+      _loadBookings();
     }
   }
-
+  
   Future<void> _loadBookings() async {
-    final bookingProvider = Provider.of<BookingProvider>(
-      context,
-      listen: false,
-    );
-    await bookingProvider.getUserBookings();
+    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    await bookingProvider.getUserBookings(status: _currentFilter);
   }
-
-  Future<void> _refreshBookings() async {
-    final bookingProvider = Provider.of<BookingProvider>(
-      context,
-      listen: false,
-    );
-    await bookingProvider.getUserBookings(
-      status: _selectedFilter == 'all' ? null : _selectedFilter,
-    );
-  }
-
+  
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Bookings'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(text: 'All'),
+            Tab(text: 'Upcoming'),
+            Tab(text: 'Active'),
+            Tab(text: 'Past'),
+          ],
+        ),
       ),
-      body: Column(
-        children: [
-          // Filter tabs
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterTab('all', 'All'),
-                  _buildFilterTab('pending', 'Pending'),
-                  _buildFilterTab('confirmed', 'Confirmed'),
-                  _buildFilterTab('in_progress', 'In Progress'),
-                  _buildFilterTab('completed', 'Completed'),
-                  _buildFilterTab('cancelled', 'Cancelled'),
-                ],
-              ),
-            ),
-          ),
-
-          // Booking list
-          Expanded(
-            child: Consumer<BookingProvider>(
-              builder: (context, bookingProvider, child) {
-                if (bookingProvider.isLoading) {
-                  return const Center(child: LoadingIndicator());
-                }
-
-                if (bookingProvider.error != null) {
-                  return GenericErrorView(
-                    message: bookingProvider.error,
-                    onRetry: _refreshBookings,
-                  );
-                }
-
-                final bookings = bookingProvider.bookings;
-
-                if (bookings == null || bookings.isEmpty) {
-                  return EmptyState(
-                    title: 'No Bookings Found',
-                    message:
-                        _selectedFilter == 'all'
-                            ? 'You don\'t have any bookings yet.'
-                            : 'You don\'t have any ${_selectedFilter.replaceAll('_', ' ')} bookings.',
-                    lottieAsset: 'assets/animations/empty_trips.json',
-                    buttonText: 'Book a Trip',
-                    onButtonPressed: () {
-                      // Navigate to route search or home
-                      Navigator.pop(context);
-                    },
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: _refreshBookings,
-                  color: AppTheme.primaryColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: bookings.length,
-                    itemBuilder: (context, index) {
-                      final booking = bookings[index];
-                      return _BookingCard(
-                        booking: booking,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) =>
-                                      BookingDetailPage(bookingId: booking.id),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+      body: RefreshIndicator(
+        onRefresh: _loadBookings,
+        child: Consumer<BookingProvider>(
+          builder: (context, bookingProvider, child) {
+            if (bookingProvider.isLoading) {
+              return const Center(
+                child: LoadingIndicator(),
+              );
+            }
+            
+            if (bookingProvider.error != null) {
+              return GenericErrorView(
+                message: bookingProvider.error,
+                onRetry: _loadBookings,
+              );
+            }
+            
+            final bookings = bookingProvider.userBookings;
+            
+            if (bookings == null || bookings.isEmpty) {
+              return EmptyState(
+                title: 'No Bookings Found',
+                message: 'You don\'t have any bookings${_currentFilter != null ? ' in this category' : ''}.',
+                lottieAsset: 'assets/animations/empty_list.json',
+                buttonText: 'Book a Trip',
+                onButtonPressed: () {
+                  // Navigate to route search page
+                },
+              );
+            }
+            
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: bookings.length,
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return _BookingItem(
+                  booking: booking,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingDetailPage(bookingId: booking.id),
+                      ),
+                    ).then((_) => _loadBookings());
+                  },
                 );
               },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterTab(String filter, String label) {
-    final isSelected = _selectedFilter == filter;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedFilter = filter;
-          });
-          // Reload bookings with filter
-          final bookingProvider = Provider.of<BookingProvider>(
-            context,
-            listen: false,
-          );
-          bookingProvider.getUserBookings(
-            status: filter == 'all' ? null : filter,
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryColor : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppTheme.textSecondaryColor,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-            textAlign: TextAlign.center,
-          ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _BookingCard extends StatelessWidget {
+class _BookingItem extends StatelessWidget {
   final Booking booking;
   final VoidCallback onTap;
 
-  const _BookingCard({Key? key, required this.booking, required this.onTap})
-    : super(key: key);
+  const _BookingItem({
+    Key? key,
+    required this.booking,
+    required this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Format date
-    final formattedDate = DateFormat(
-      'dd MMM yyyy, HH:mm',
-    ).format(booking.bookingTime);
-
-    // Define status color
+    // Format date and time
+    final formattedDate = DateFormat('dd MMM yyyy').format(booking.bookingTime);
+    final formattedTime = DateFormat('HH:mm').format(booking.bookingTime);
+    
+    // Determine status color
     Color statusColor;
     IconData statusIcon;
-
+    
     switch (booking.status) {
       case 'pending':
         statusColor = AppTheme.pendingColor;
@@ -261,11 +210,10 @@ class _BookingCard extends StatelessWidget {
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Booking header with status
+            // Top section with status and booking info
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: statusColor.withOpacity(0.1),
                 borderRadius: const BorderRadius.only(
@@ -275,157 +223,154 @@ class _BookingCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(statusIcon, size: 18, color: statusColor),
+                  Icon(
+                    statusIcon,
+                    color: statusColor,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      booking.status.replaceAll('_', ' ').toUpperCase(),
-                      style: TextStyle(
-                        color: statusColor,
+                      'Booking #${booking.id}',
+                      style: const TextStyle(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  Text(
-                    'Booking #${booking.id}',
-                    style: TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 12,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      booking.status.replaceAll('_', ' ').toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-
+            
             // Booking details
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Date
+                  // Trip info
                   Row(
                     children: [
-                      Icon(
-                        Icons.event,
+                      const Icon(
+                        Icons.directions_bus,
                         size: 16,
-                        color: AppTheme.textSecondaryColor,
+                        color: Colors.grey,
                       ),
                       const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Trip #${booking.tripId}',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
                       Text(
-                        formattedDate,
-                        style: TextStyle(color: AppTheme.textSecondaryColor),
+                        '$formattedDate at $formattedTime',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // Trip info
+                  const SizedBox(height: 8),
+                  
+                  // From -> To info
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // From/To
+                      Column(
+                        children: [
+                          const Icon(Icons.circle_outlined, size: 12, color: Colors.green),
+                          Container(
+                            width: 1,
+                            height: 16,
+                            color: Colors.grey.shade300,
+                          ),
+                          const Icon(Icons.location_on_outlined, size: 12, color: Colors.red),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // This would normally come from the trip details
-                            // Here we're just displaying the stop IDs as placeholders
                             Text(
-                              'From: Stop #${booking.pickupStopId}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                              'Stop #${booking.pickupStopId}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondaryColor,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 16),
                             Text(
-                              'To: Stop #${booking.dropoffStopId}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                              'Stop #${booking.dropoffStopId}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondaryColor,
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                      // Passenger count and fare
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${booking.passengerCount} ${booking.passengerCount > 1 ? 'Passengers' : 'Passenger'}',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
+                            'TZS ${booking.fareAmount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'TZS ${booking.fareAmount.toStringAsFixed(0)}',
+                            '${booking.passengerCount} passenger${booking.passengerCount > 1 ? 's' : ''}',
                             style: TextStyle(
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: AppTheme.textSecondaryColor,
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Payment status and view button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              booking.paymentStatus == 'paid'
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          booking.paymentStatus.toUpperCase(),
-                          style: TextStyle(
-                            color:
-                                booking.paymentStatus == 'paid'
-                                    ? Colors.green
-                                    : Colors.orange,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-
-                      TextButton(
-                        onPressed: onTap,
-                        style: TextButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor.withOpacity(
-                            0.1,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: Text(
-                          'View Details',
-                          style: TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
+              ),
+            ),
+            
+            // Bottom action button
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.grey.shade200,
+                  ),
+                ),
+              ),
+              child: Text(
+                'View Details',
+                style: TextStyle(
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ],

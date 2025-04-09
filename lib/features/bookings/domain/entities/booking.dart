@@ -11,6 +11,15 @@ class Booking extends Equatable {
   final int passengerCount;
   final String status;
   final String paymentStatus;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  
+  // Additional fields that might be included from API but are not in the base model
+  final Map<String, dynamic>? trip;
+  final Map<String, dynamic>? pickupStop;
+  final Map<String, dynamic>? dropoffStop;
+  final Map<String, dynamic>? payment;
+  final Map<String, dynamic>? user;
   
   const Booking({
     required this.id,
@@ -23,6 +32,13 @@ class Booking extends Equatable {
     required this.passengerCount,
     required this.status,
     required this.paymentStatus,
+    required this.createdAt,
+    required this.updatedAt,
+    this.trip,
+    this.pickupStop,
+    this.dropoffStop,
+    this.payment,
+    this.user,
   });
   
   Booking copyWith({
@@ -36,6 +52,13 @@ class Booking extends Equatable {
     int? passengerCount,
     String? status,
     String? paymentStatus,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Map<String, dynamic>? trip,
+    Map<String, dynamic>? pickupStop,
+    Map<String, dynamic>? dropoffStop,
+    Map<String, dynamic>? payment,
+    Map<String, dynamic>? user,
   }) {
     return Booking(
       id: id ?? this.id,
@@ -48,6 +71,13 @@ class Booking extends Equatable {
       passengerCount: passengerCount ?? this.passengerCount,
       status: status ?? this.status,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      trip: trip ?? this.trip,
+      pickupStop: pickupStop ?? this.pickupStop,
+      dropoffStop: dropoffStop ?? this.dropoffStop,
+      payment: payment ?? this.payment,
+      user: user ?? this.user,
     );
   }
   
@@ -63,5 +93,7 @@ class Booking extends Equatable {
     passengerCount,
     status,
     paymentStatus,
+    createdAt,
+    updatedAt,
   ];
 }

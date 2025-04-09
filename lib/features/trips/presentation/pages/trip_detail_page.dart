@@ -4,15 +4,11 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
-import '../../../../core/utils/extensions.dart';
 
 class TripDetailPage extends StatefulWidget {
   final int tripId;
 
-  const TripDetailPage({
-    Key? key,
-    required this.tripId,
-  }) : super(key: key);
+  const TripDetailPage({super.key, required this.tripId});
 
   @override
   State<TripDetailPage> createState() => _TripDetailPageState();
@@ -21,32 +17,37 @@ class TripDetailPage extends StatefulWidget {
 class _TripDetailPageState extends State<TripDetailPage> {
   bool _isLoading = true;
   GoogleMapController? _mapController;
-  
+
   // Trip data (would come from API)
   Map<String, dynamic>? _tripData;
-  
+
   // Map markers
   Set<Marker> _markers = {};
-  
+
   // Polyline for route
   Set<Polyline> _polylines = {};
-  
+
+  String capitalize(String text) {
+    if (text.isEmpty) return text;
+    return '${text[0].toUpperCase()}${text.substring(1)}';
+  }
+
   @override
   void initState() {
     super.initState();
     _loadTripDetails();
   }
-  
+
   @override
   void dispose() {
     _mapController?.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadTripDetails() async {
     // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
-    
+
     // Set sample data
     _tripData = {
       'id': widget.tripId,
@@ -72,7 +73,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
           'position': const LatLng(-6.7402, 39.1589),
           'status': 'departed',
           'arrival_time': DateTime.now().subtract(const Duration(minutes: 15)),
-          'departure_time': DateTime.now().subtract(const Duration(minutes: 10)),
+          'departure_time': DateTime.now().subtract(
+            const Duration(minutes: 10),
+          ),
         },
         {
           'id': 2,
@@ -100,41 +103,47 @@ class _TripDetailPageState extends State<TripDetailPage> {
         },
       ],
     };
-    
+
     // Setup map markers
     _setupMapMarkersAndPolylines();
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   void _setupMapMarkersAndPolylines() {
     if (_tripData == null) return;
-    
+
     final stops = _tripData!['stops'] as List;
     final currentLocation = _tripData!['current_location'] as LatLng;
-    
+
     // Create markers for each stop
     final markerSet = <Marker>{};
     for (final stop in stops) {
       final position = stop['position'] as LatLng;
       final name = stop['name'] as String;
       final status = stop['status'] as String;
-      
+
       // Determine marker color based on status
       BitmapDescriptor markerIcon;
       switch (status) {
         case 'departed':
-          markerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+          markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          );
           break;
         case 'arrived':
-          markerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+          markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueBlue,
+          );
           break;
         default:
-          markerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+          markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueRed,
+          );
       }
-      
+
       markerSet.add(
         Marker(
           markerId: MarkerId('stop_${stop['id']}'),
@@ -144,7 +153,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
         ),
       );
     }
-    
+
     // Add vehicle marker
     markerSet.add(
       Marker(
@@ -154,7 +163,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
       ),
     );
-    
+
     // Create polyline for the route
     final polylines = <Polyline>{
       Polyline(
@@ -164,16 +173,16 @@ class _TripDetailPageState extends State<TripDetailPage> {
         width: 5,
       ),
     };
-    
+
     setState(() {
       _markers = markerSet;
       _polylines = polylines;
     });
   }
-  
+
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    
+
     // Center the map to show all markers
     if (_tripData != null) {
       controller.moveCamera(
@@ -181,10 +190,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
       );
     }
   }
-  
+
   Future<void> _viewDriverInfo() async {
     if (_tripData == null) return;
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -199,17 +208,16 @@ class _TripDetailPageState extends State<TripDetailPage> {
             children: [
               const Text(
                 'Driver Information',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   const CircleAvatar(
                     radius: 30,
-                    backgroundImage: AssetImage('assets/images/driver_placeholder.png'),
+                    backgroundImage: AssetImage(
+                      'assets/images/driver_placeholder.png',
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -226,11 +234,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                              size: 18,
-                            ),
+                            Icon(Icons.star, color: Colors.amber, size: 18),
                             const SizedBox(width: 4),
                             Text(
                               '${_tripData!['driver_rating']} Rating',
@@ -264,9 +268,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         const SizedBox(height: 4),
                         Text(
                           _tripData!['vehicle_plate'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -284,10 +286,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _tripData!['vehicle_type'].toString().capitalize,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          capitalize(_tripData!['vehicle_type'].toString()),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -313,34 +313,33 @@ class _TripDetailPageState extends State<TripDetailPage> {
       },
     );
   }
-  
+
   void _showCancelDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Trip'),
-        content: const Text(
-          'Are you sure you want to cancel this trip? Cancellation fees may apply based on our policy.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No, Keep Trip'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Handle trip cancellation
-            },
-            child: Text(
-              'Yes, Cancel',
-              style: TextStyle(
-                color: AppTheme.errorColor,
-              ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cancel Trip'),
+            content: const Text(
+              'Are you sure you want to cancel this trip? Cancellation fees may apply based on our policy.',
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('No, Keep Trip'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Handle trip cancellation
+                },
+                child: Text(
+                  'Yes, Cancel',
+                  style: TextStyle(color: AppTheme.errorColor),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -357,18 +356,11 @@ class _TripDetailPageState extends State<TripDetailPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.grey.shade400,
-              ),
+              Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               const Text(
                 'Trip details not found',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               CustomButton(
@@ -382,16 +374,22 @@ class _TripDetailPageState extends State<TripDetailPage> {
         ),
       );
     }
-    
+
     // Format time
-    final formattedStartTime = DateFormat('HH:mm').format(_tripData!['start_time']);
-    final formattedEndTime = DateFormat('HH:mm').format(_tripData!['estimated_end_time']);
-    final formattedDate = DateFormat('EEE, d MMM').format(_tripData!['start_time']);
-    
+    final formattedStartTime = DateFormat(
+      'HH:mm',
+    ).format(_tripData!['start_time']);
+    final formattedEndTime = DateFormat(
+      'HH:mm',
+    ).format(_tripData!['estimated_end_time']);
+    final formattedDate = DateFormat(
+      'EEE, d MMM',
+    ).format(_tripData!['start_time']);
+
     // Determine trip status style
     Color statusColor;
     IconData statusIcon;
-    
+
     switch (_tripData!['status']) {
       case 'scheduled':
         statusColor = AppTheme.confirmedColor;
@@ -435,7 +433,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
                 ),
-                
+
                 // App bar
                 Positioned(
                   top: MediaQuery.of(context).padding.top,
@@ -491,7 +489,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     ),
                   ),
                 ),
-                
+
                 // Recenter button
                 Positioned(
                   bottom: 16,
@@ -524,7 +522,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
               ],
             ),
           ),
-          
+
           // Trip details (bottom sheet)
           Container(
             decoration: BoxDecoration(
@@ -555,7 +553,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     ),
                   ),
                 ),
-                
+
                 // Route and status
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -594,14 +592,12 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              statusIcon,
-                              size: 16,
-                              color: statusColor,
-                            ),
+                            Icon(statusIcon, size: 16, color: statusColor),
                             const SizedBox(width: 4),
                             Text(
-                              _tripData!['status'].replaceAll('_', ' ').capitalize,
+                              capitalize(
+                                _tripData!['status'].replaceAll('_', ' '),
+                              ),
                               style: TextStyle(
                                 color: statusColor,
                                 fontWeight: FontWeight.w500,
@@ -613,7 +609,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     ],
                   ),
                 ),
-                
+
                 // Stops timeline
                 Container(
                   height: 150,
@@ -624,11 +620,11 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     itemBuilder: (context, index) {
                       final stop = _tripData!['stops'][index];
                       final status = stop['status'];
-                      
+
                       // Determine status icon and color
                       IconData statusIcon;
                       Color statusColor;
-                      
+
                       switch (status) {
                         case 'departed':
                           statusIcon = Icons.check_circle;
@@ -642,35 +638,35 @@ class _TripDetailPageState extends State<TripDetailPage> {
                           statusIcon = Icons.circle_outlined;
                           statusColor = Colors.grey;
                       }
-                      
+
                       // Format times
                       String arrivalTime = 'Pending';
                       if (stop['arrival_time'] != null) {
-                        arrivalTime = DateFormat('HH:mm').format(stop['arrival_time']);
+                        arrivalTime = DateFormat(
+                          'HH:mm',
+                        ).format(stop['arrival_time']);
                       }
-                      
+
                       return Container(
                         width: 150,
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
-                          color: status == 'arrived'
-                              ? AppTheme.primaryColor.withOpacity(0.1)
-                              : Colors.white,
+                          color:
+                              status == 'arrived'
+                                  ? AppTheme.primaryColor.withOpacity(0.1)
+                                  : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: status == 'arrived'
-                                ? AppTheme.primaryColor
-                                : Colors.grey.shade200,
+                            color:
+                                status == 'arrived'
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey.shade200,
                           ),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              statusIcon,
-                              color: statusColor,
-                              size: 24,
-                            ),
+                            Icon(statusIcon, color: statusColor, size: 24),
                             const SizedBox(height: 8),
                             Text(
                               stop['name'],
@@ -689,7 +685,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              status.capitalize,
+                              capitalize(status),
                               style: TextStyle(
                                 color: statusColor,
                                 fontWeight: FontWeight.w500,
@@ -702,7 +698,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     },
                   ),
                 ),
-                
+
                 // Action buttons
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -719,31 +715,40 @@ class _TripDetailPageState extends State<TripDetailPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: CustomButton(
-                          text: _tripData!['status'] == 'completed'
-                              ? 'Rate Trip'
-                              : 'Cancel Trip',
-                          icon: _tripData!['status'] == 'completed'
-                              ? Icons.star
-                              : Icons.cancel,
-                          onPressed: _tripData!['status'] == 'completed'
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => AddReviewPage(
-                                        tripId: widget.tripId,
-                                        driverId: 1, // This would come from actual data
-                                        driverName: _tripData!['driver_name'],
-                                        vehicleId: 1, // This would come from actual data
-                                        vehiclePlate: _tripData!['vehicle_plate'],
+                          text:
+                              _tripData!['status'] == 'completed'
+                                  ? 'Rate Trip'
+                                  : 'Cancel Trip',
+                          icon:
+                              _tripData!['status'] == 'completed'
+                                  ? Icons.star
+                                  : Icons.cancel,
+                          onPressed:
+                              _tripData!['status'] == 'completed'
+                                  ? () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) => AddReviewPage(
+                                              tripId: widget.tripId,
+                                              driverId:
+                                                  1, // This would come from actual data
+                                              driverName:
+                                                  _tripData!['driver_name'],
+                                              vehicleId:
+                                                  1, // This would come from actual data
+                                              vehiclePlate:
+                                                  _tripData!['vehicle_plate'],
+                                            ),
                                       ),
-                                    ),
-                                  );
-                                }
-                              : _showCancelDialog,
-                          type: _tripData!['status'] == 'completed'
-                              ? ButtonType.primary
-                              : ButtonType.secondary,
+                                    );
+                                  }
+                                  : _showCancelDialog,
+                          type:
+                              _tripData!['status'] == 'completed'
+                                  ? ButtonType.primary
+                                  : ButtonType.secondary,
                         ),
                       ),
                     ],
