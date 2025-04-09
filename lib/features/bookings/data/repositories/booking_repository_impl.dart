@@ -5,7 +5,6 @@ import '../../../../core/network/network_info.dart';
 import '../../domain/entities/booking.dart';
 import '../../domain/repositories/booking_repository.dart';
 import '../datasources/booking_datasource.dart';
-import '../models/booking_model.dart';
 
 class BookingRepositoryImpl implements BookingRepository {
   final BookingDataSource dataSource;
