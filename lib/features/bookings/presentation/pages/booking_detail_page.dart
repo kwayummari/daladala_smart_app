@@ -24,7 +24,9 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadBookingDetails();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadBookingDetails();
+      });
   }
   
   Future<void> _loadBookingDetails() async {
