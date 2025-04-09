@@ -21,7 +21,6 @@ import '../../features/bookings/domain/usecases/create_booking_usecase.dart';
 import '../../features/bookings/domain/usecases/get_user_bookings_usecase.dart';
 import '../../features/bookings/presentation/providers/booking_provider.dart';
 
-
 import '../../features/routes/data/datasources/route_datasource.dart';
 import '../../features/routes/data/repositories/route_repository_impl.dart';
 import '../../features/routes/domain/repositories/route_repository.dart';
