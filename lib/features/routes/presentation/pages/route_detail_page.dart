@@ -7,6 +7,7 @@ import '../../../../core/ui/widgets/custom_button.dart';
 import '../../../../core/ui/widgets/error_view.dart';
 import '../providers/route_provider.dart';
 import '../../../trips/presentation/pages/trip_selection_page.dart';
+import '../../domain/entities/transport_route.dart';
 
 class RouteDetailPage extends StatefulWidget {
   final int routeId;
@@ -21,6 +22,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
+  TransportRoute? _currentRoute;
 
   @override
   void initState() {
@@ -38,8 +40,28 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
 
   Future<void> _loadRouteDetails() async {
     final routeProvider = Provider.of<RouteProvider>(context, listen: false);
+    
+    // Try to find the route manually instead of using firstWhere()
+    if (routeProvider.routes != null) {
+      for (var route in routeProvider.routes!) {
+        if (route.id == widget.routeId) {
+          setState(() {
+            _currentRoute = route;
+          });
+          break;
+        }
+      }
+    }
+    
+    // If we didn't find the route, use selectedRoute as fallback
+    if (_currentRoute == null && routeProvider.selectedRoute != null) {
+      setState(() {
+        _currentRoute = routeProvider.selectedRoute;
+      });
+    }
+    
+    // Load route stops
     await routeProvider.getRouteStops(widget.routeId);
-
     _setupMapMarkersAndPolylines();
   }
 
@@ -144,11 +166,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     return Scaffold(
       body: Consumer<RouteProvider>(
         builder: (context, routeProvider, child) {
-          final route = routeProvider.routes?.firstWhere(
-            (r) => r.id == widget.routeId,
-            orElse: () => routeProvider.selectedRoute!,
-          );
-
+          // Use the route we stored in state
+          final route = _currentRoute;
+          
           if (routeProvider.isLoading) {
             return const Center(child: LoadingIndicator());
           }
@@ -382,7 +402,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
+                                          decoration: const BoxDecoration(
                                             color: Colors.green,
                                             shape: BoxShape.circle,
                                           ),
@@ -413,7 +433,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
+                                          decoration: const BoxDecoration(
                                             color: Colors.red,
                                             shape: BoxShape.circle,
                                           ),
