@@ -10,7 +10,7 @@ import '../providers/booking_provider.dart';
 import 'booking_detail_page.dart';
 
 class BookingsPage extends StatefulWidget {
-  const BookingsPage({Key? key}) : super(key: key);
+  const BookingsPage({super.key});
 
   @override
   State<BookingsPage> createState() => _BookingsPageState();
@@ -29,7 +29,9 @@ class _BookingsPageState extends State<BookingsPage>
     super.didChangeDependencies();
 
     if (!_isInitialized) {
-      _loadBookings();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadBookings();
+      });
       _isInitialized = true;
     }
   }

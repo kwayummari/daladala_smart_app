@@ -105,7 +105,6 @@ class _TripsPageState extends State<TripsPage>
                     lottieAsset: 'assets/animations/empty_trips.json',
                     buttonText: 'Book a Trip',
                     onButtonPressed: () {
-                      // Navigate to route search or home
                       HomePage.navigateToRoutes();
                     },
                   );
