@@ -21,12 +21,6 @@ import '../../features/bookings/domain/usecases/create_booking_usecase.dart';
 import '../../features/bookings/domain/usecases/get_user_bookings_usecase.dart';
 import '../../features/bookings/presentation/providers/booking_provider.dart';
 
-import '../../features/trips/data/datasources/trip_datasource.dart';
-import '../../features/trips/data/repositories/trip_repository_impl.dart';
-import '../../features/trips/domains/repositories/trip_repository.dart';
-import '../../features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
-import '../../features/trips/domains/usecases/get_trip_details_usecase.dart';
-import '../../features/trips/presentation/providers/trip_provider.dart';
 
 import '../../features/routes/data/datasources/route_datasource.dart';
 import '../../features/routes/data/repositories/route_repository_impl.dart';
