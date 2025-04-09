@@ -11,10 +11,7 @@ import '../../../trips/presentation/pages/trip_selection_page.dart';
 class RouteDetailPage extends StatefulWidget {
   final int routeId;
 
-  const RouteDetailPage({
-    Key? key,
-    required this.routeId,
-  }) : super(key: key);
+  const RouteDetailPage({super.key, required this.routeId});
 
   @override
   State<RouteDetailPage> createState() => _RouteDetailPageState();
@@ -24,51 +21,59 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
-  
+
   @override
   void initState() {
     super.initState();
-    _loadRouteDetails();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRouteDetails();
+    });
   }
-  
+
   @override
   void dispose() {
     _mapController?.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadRouteDetails() async {
     final routeProvider = Provider.of<RouteProvider>(context, listen: false);
     await routeProvider.getRouteStops(widget.routeId);
-    
+
     _setupMapMarkersAndPolylines();
   }
-  
+
   void _setupMapMarkersAndPolylines() {
     final routeProvider = Provider.of<RouteProvider>(context, listen: false);
     final stops = routeProvider.stops;
-    
+
     if (stops == null || stops.isEmpty) return;
-    
+
     // Create markers for each stop
     final markerSet = <Marker>{};
     final polylinePoints = <LatLng>[];
-    
+
     for (int i = 0; i < stops.length; i++) {
       final stop = stops[i];
       final position = LatLng(stop.latitude, stop.longitude);
       polylinePoints.add(position);
-      
+
       // Use different marker color for start, end and intermediate stops
       BitmapDescriptor markerIcon;
       if (i == 0) {
-        markerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueGreen,
+        );
       } else if (i == stops.length - 1) {
-        markerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+        markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueRed,
+        );
       } else {
-        markerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+        markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueBlue,
+        );
       }
-      
+
       markerSet.add(
         Marker(
           markerId: MarkerId('stop_${stop.id}'),
@@ -81,7 +86,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         ),
       );
     }
-    
+
     // Create polyline for the route
     final polylines = <Polyline>{
       Polyline(
@@ -91,45 +96,43 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         width: 5,
       ),
     };
-    
+
     setState(() {
       _markers = markerSet;
       _polylines = polylines;
     });
   }
-  
+
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    
+
     // Fit map to show all markers
     _fitMapToMarkers();
   }
-  
+
   void _fitMapToMarkers() {
     if (_markers.isEmpty || _mapController == null) return;
-    
+
     final bounds = _getBounds(_markers);
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 50.0),
-    );
+    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50.0));
   }
-  
+
   LatLngBounds _getBounds(Set<Marker> markers) {
     double minLat = 90.0;
     double maxLat = -90.0;
     double minLng = 180.0;
     double maxLng = -180.0;
-    
+
     for (final marker in markers) {
       final lat = marker.position.latitude;
       final lng = marker.position.longitude;
-      
+
       minLat = lat < minLat ? lat : minLat;
       maxLat = lat > maxLat ? lat : maxLat;
       minLng = lng < minLng ? lng : minLng;
       maxLng = lng > maxLng ? lng : maxLng;
     }
-    
+
     return LatLngBounds(
       southwest: LatLng(minLat, minLng),
       northeast: LatLng(maxLat, maxLng),
@@ -145,28 +148,24 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
             (r) => r.id == widget.routeId,
             orElse: () => routeProvider.selectedRoute!,
           );
-          
+
           if (routeProvider.isLoading) {
-            return const Center(
-              child: LoadingIndicator(),
-            );
+            return const Center(child: LoadingIndicator());
           }
-          
+
           if (routeProvider.error != null) {
             return GenericErrorView(
               message: routeProvider.error,
               onRetry: _loadRouteDetails,
             );
           }
-          
+
           if (route == null) {
-            return const GenericErrorView(
-              message: 'Route not found',
-            );
+            return const GenericErrorView(message: 'Route not found');
           }
-          
+
           final stops = routeProvider.stops;
-          
+
           return Column(
             children: [
               // Map view (upper half)
@@ -176,7 +175,10 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     // Google Map
                     GoogleMap(
                       initialCameraPosition: const CameraPosition(
-                        target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
+                        target: LatLng(
+                          -6.8025,
+                          39.2599,
+                        ), // Dar es Salaam city center
                         zoom: 13.0,
                       ),
                       onMapCreated: _onMapCreated,
@@ -187,7 +189,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                       zoomControlsEnabled: false,
                       mapToolbarEnabled: false,
                     ),
-                    
+
                     // App bar
                     Positioned(
                       top: MediaQuery.of(context).padding.top,
@@ -220,7 +222,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                             ),
                             Expanded(
                               child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 8,
@@ -271,7 +275,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   ],
                 ),
               ),
-              
+
               // Route details (bottom sheet)
               Container(
                 decoration: BoxDecoration(
@@ -302,7 +306,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                         ),
                       ),
                     ),
-                    
+
                     // Route info
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -344,26 +348,28 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: route.status == 'active'
-                                      ? Colors.green.withOpacity(0.1)
-                                      : Colors.orange.withOpacity(0.1),
+                                  color:
+                                      route.status == 'active'
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.orange.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
                                   route.status,
                                   style: TextStyle(
-                                    color: route.status == 'active'
-                                        ? Colors.green
-                                        : Colors.orange,
+                                    color:
+                                        route.status == 'active'
+                                            ? Colors.green
+                                            : Colors.orange,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Route details
                           Row(
                             children: [
@@ -431,7 +437,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                   ],
                                 ),
                               ),
-                              
+
                               // Distance and time
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,9 +481,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Stops count
                           if (stops != null)
                             Row(
@@ -499,7 +505,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                         ],
                       ),
                     ),
-                    
+
                     // View trips button
                     Padding(
                       padding: const EdgeInsets.all(16),
@@ -509,12 +515,13 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => TripSelectionPage(
-                                routeId: route.id,
-                                routeName: route.routeName,
-                                from: route.startPoint,
-                                to: route.endPoint,
-                              ),
+                              builder:
+                                  (_) => TripSelectionPage(
+                                    routeId: route.id,
+                                    routeName: route.routeName,
+                                    from: route.startPoint,
+                                    to: route.endPoint,
+                                  ),
                             ),
                           );
                         },
