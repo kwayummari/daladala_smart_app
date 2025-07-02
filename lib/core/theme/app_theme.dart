@@ -12,12 +12,12 @@ class AppTheme {
   static final Color successColor = HexColor('#388E3C');
   static final Color warningColor = HexColor('#FFA000');
   static final Color infoColor = HexColor('#1976D2');
-  
+
   // Text colors
   static final Color textPrimaryColor = HexColor('#212121');
   static final Color textSecondaryColor = HexColor('#757575');
   static final Color textTertiaryColor = HexColor('#9E9E9E');
-  
+
   // Status colors
   static final Color pendingColor = HexColor('#FFA000');
   static final Color confirmedColor = HexColor('#1976D2');
@@ -37,11 +37,11 @@ class AppTheme {
       error: errorColor,
     ),
     scaffoldBackgroundColor: backgroundColor,
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       color: Colors.white,
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -50,9 +50,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -60,9 +58,7 @@ class AppTheme {
         foregroundColor: primaryColor,
         side: BorderSide(color: primaryColor, width: 1.5),
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -106,7 +102,7 @@ class AppTheme {
       type: BottomNavigationBarType.fixed,
       elevation: 8,
     ),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: primaryColor,
       unselectedLabelColor: textSecondaryColor,
       indicatorColor: primaryColor,
@@ -117,15 +113,42 @@ class AppTheme {
       space: 1,
     ),
     textTheme: GoogleFonts.poppinsTextTheme().copyWith(
-      displayLarge: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.bold),
-      displayMedium: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.bold),
-      displaySmall: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.bold),
-      headlineLarge: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.bold),
-      headlineMedium: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.w600),
-      headlineSmall: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.w600),
-      titleLarge: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.w600),
-      titleMedium: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.w500),
-      titleSmall: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.w500),
+      displayLarge: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.bold,
+      ),
+      displayMedium: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.bold,
+      ),
+      displaySmall: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.bold,
+      ),
+      headlineLarge: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.bold,
+      ),
+      headlineMedium: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineSmall: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.w600,
+      ),
+      titleLarge: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.w600,
+      ),
+      titleMedium: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.w500,
+      ),
+      titleSmall: TextStyle(
+        color: textPrimaryColor,
+        fontWeight: FontWeight.w500,
+      ),
       bodyLarge: TextStyle(color: textPrimaryColor),
       bodyMedium: TextStyle(color: textSecondaryColor),
       bodySmall: TextStyle(color: textTertiaryColor),
@@ -137,13 +160,9 @@ class AppTheme {
       backgroundColor: HexColor('#323232'),
       contentTextStyle: TextStyle(color: Colors.white),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: primaryColor,
-    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: primaryColor),
     chipTheme: ChipThemeData(
       backgroundColor: HexColor('#F5F5F5'),
       disabledColor: HexColor('#E0E0E0'),
@@ -152,9 +171,7 @@ class AppTheme {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       labelStyle: TextStyle(color: textPrimaryColor),
       secondaryLabelStyle: TextStyle(color: primaryColor),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(50),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
     ),
   );
 
