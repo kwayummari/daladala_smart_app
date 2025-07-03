@@ -23,14 +23,20 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     super.initState();
     _loadPaymentHistory();
   }
-  
+
   Future<void> _loadPaymentHistory() async {
-    final paymentProvider = Provider.of<PaymentProvider>(context, listen: false);
+    final paymentProvider = Provider.of<PaymentProvider>(
+      context,
+      listen: false,
+    );
     await paymentProvider.getPaymentHistory();
   }
-  
+
   Future<void> _refreshPaymentHistory() async {
-    final paymentProvider = Provider.of<PaymentProvider>(context, listen: false);
+    final paymentProvider = Provider.of<PaymentProvider>(
+      context,
+      listen: false,
+    );
     await paymentProvider.getPaymentHistory();
   }
 
@@ -45,20 +51,18 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       body: Consumer<PaymentProvider>(
         builder: (context, paymentProvider, child) {
           if (paymentProvider.isLoading) {
-            return const Center(
-              child: LoadingIndicator(),
-            );
+            return const Center(child: LoadingIndicator());
           }
-          
+
           if (paymentProvider.error != null) {
             return GenericErrorView(
               message: paymentProvider.error,
               onRetry: _refreshPaymentHistory,
             );
           }
-          
+
           final payments = paymentProvider.paymentHistory;
-          
+
           if (payments == null || payments.isEmpty) {
             return EmptyState(
               title: 'No Payments Found',
@@ -71,26 +75,30 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
               },
             );
           }
-          
+
           // Group payments by month
           final Map<String, List<Payment>> groupedPayments = {};
-          
           for (final payment in payments) {
-            final monthYear = DateFormat('MMMM yyyy').format(payment.paymentTime);
+            if (payment.paymentTime == null) {
+              continue; // Skip payments with null paymentTime
+            }
+            final monthYear = DateFormat(
+              'MMMM yyyy',
+            ).format(payment.paymentTime!);
             if (!groupedPayments.containsKey(monthYear)) {
               groupedPayments[monthYear] = [];
             }
             groupedPayments[monthYear]!.add(payment);
           }
-          
+
           // Sort months in descending order (most recent first)
-          final sortedMonths = groupedPayments.keys.toList()
-            ..sort((a, b) {
-              final aDate = DateFormat('MMMM yyyy').parse(a);
-              final bDate = DateFormat('MMMM yyyy').parse(b);
-              return bDate.compareTo(aDate);
-            });
-          
+          final sortedMonths =
+              groupedPayments.keys.toList()..sort((a, b) {
+                final aDate = DateFormat('MMMM yyyy').parse(a);
+                final bDate = DateFormat('MMMM yyyy').parse(b);
+                return bDate.compareTo(aDate);
+              });
+
           return RefreshIndicator(
             onRefresh: _refreshPaymentHistory,
             color: AppTheme.primaryColor,
@@ -100,7 +108,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
               itemBuilder: (context, index) {
                 final month = sortedMonths[index];
                 final monthPayments = groupedPayments[month]!;
-                
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -115,19 +123,23 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         ),
                       ),
                     ),
-                    
+
                     // Payment items
-                    ...monthPayments.map((payment) => _PaymentItem(
-                      payment: payment,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PaymentDetailPage(paymentId: payment.id),
-                          ),
-                        );
-                      },
-                    )),
+                    ...monthPayments.map(
+                      (payment) => _PaymentItem(
+                        payment: payment,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) =>
+                                      PaymentDetailPage(paymentId: payment.id),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 );
               },
@@ -143,17 +155,15 @@ class _PaymentItem extends StatelessWidget {
   final Payment payment;
   final VoidCallback onTap;
 
-  const _PaymentItem({
-    super.key,
-    required this.payment,
-    required this.onTap,
-  });
+  const _PaymentItem({super.key, required this.payment, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     // Format date
-    final formattedDate = DateFormat('dd MMM yyyy, HH:mm').format(payment.paymentTime);
-    
+    final formattedDate = payment.paymentTime != null
+        ? DateFormat('dd MMM yyyy, HH:mm').format(payment.paymentTime!)
+        : '';
+
     // Determine payment method icon
     IconData methodIcon;
     switch (payment.paymentMethod) {
@@ -172,7 +182,7 @@ class _PaymentItem extends StatelessWidget {
       default:
         methodIcon = Icons.payment;
     }
-    
+
     // Determine status color
     Color statusColor;
     switch (payment.status) {
@@ -191,17 +201,14 @@ class _PaymentItem extends StatelessWidget {
       default:
         statusColor = Colors.grey;
     }
-    
+
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
+            bottom: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
         ),
         child: Row(
@@ -213,14 +220,10 @@ class _PaymentItem extends StatelessWidget {
                 color: AppTheme.primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                methodIcon,
-                color: AppTheme.primaryColor,
-                size: 20,
-              ),
+              child: Icon(methodIcon, color: AppTheme.primaryColor, size: 20),
             ),
             const SizedBox(width: 16),
-            
+
             // Payment details
             Expanded(
               child: Column(
@@ -229,9 +232,7 @@ class _PaymentItem extends StatelessWidget {
                   // Payment description - would normally come from booking details
                   Text(
                     'Booking #${payment.bookingId}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -246,7 +247,7 @@ class _PaymentItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Amount and status
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -255,9 +256,10 @@ class _PaymentItem extends StatelessWidget {
                   '${payment.amount.toStringAsFixed(0)} ${payment.currency}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: payment.status == 'refunded' 
-                        ? Colors.blue
-                        : AppTheme.primaryColor,
+                    color:
+                        payment.status == 'refunded'
+                            ? Colors.blue
+                            : AppTheme.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 4),

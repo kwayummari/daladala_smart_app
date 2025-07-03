@@ -1,3 +1,4 @@
+// lib/features/payments/domain/usecases/process_payment_usecase.dart
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -14,6 +15,7 @@ class ProcessPaymentUseCase implements UseCase<Payment, ProcessPaymentParams> {
     return await repository.processPayment(
       bookingId: params.bookingId,
       paymentMethod: params.paymentMethod,
+      phoneNumber: params.phoneNumber,
       transactionId: params.transactionId,
       paymentDetails: params.paymentDetails,
     );
@@ -23,12 +25,14 @@ class ProcessPaymentUseCase implements UseCase<Payment, ProcessPaymentParams> {
 class ProcessPaymentParams {
   final int bookingId;
   final String paymentMethod;
+  final String? phoneNumber;
   final String? transactionId;
   final Map<String, dynamic>? paymentDetails;
-  
+
   ProcessPaymentParams({
     required this.bookingId,
     required this.paymentMethod,
+    this.phoneNumber,
     this.transactionId,
     this.paymentDetails,
   });

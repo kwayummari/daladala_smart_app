@@ -3,7 +3,7 @@ import 'package:daladala_smart_app/features/trips/presentation/pages/trips_page.
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../routes/presentation/pages/search_route_page.dart';
-import '../../../payments/presentation/pages/wallet_page.dart';
+import '../../../wallet/presentation/pages/wallet_page.dart';
 
 class HomeQuickActions extends StatelessWidget {
   const HomeQuickActions({Key? key}) : super(key: key);

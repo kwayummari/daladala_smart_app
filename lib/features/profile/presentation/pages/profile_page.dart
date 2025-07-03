@@ -8,7 +8,7 @@ import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/profile_menu_item.dart';
 import 'edit_profile_page.dart';
-import '../../../payments/presentation/pages/wallet_page.dart';
+import '../../../wallet/presentation/pages/wallet_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
