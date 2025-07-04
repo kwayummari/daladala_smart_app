@@ -112,4 +112,13 @@ class Validators {
     
     return null;
   }
+
+  static String? validateTanzanianPhone(String? value) {
+    if (value == null || value.isEmpty) return 'Phone number is required';
+    final cleanPhone = value.replaceAll(RegExp(r'[\s\-\+]'), '');
+    if (!RegExp(r'^(255|0)[67]\d{8}$').hasMatch(cleanPhone)) {
+      return 'Please enter a valid Tanzanian phone number';
+    }
+    return null;
+  }
 }

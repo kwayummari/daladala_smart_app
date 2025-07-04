@@ -1,46 +1,45 @@
+// lib/features/auth/data/models/user_model.dart
 import '../../domain/entities/user.dart';
 
 class UserModel extends User {
   final String? accessToken;
-  
+
   const UserModel({
-    required int id,
-    required String firstName,
-    required String lastName,
-    required String phone,
-    String? email,
-    String? profilePicture,
-    required String role,
-    required bool isVerified,
-    required String status,
+    required super.id,
+    required super.firstName,
+    required super.lastName,
+    required super.phone,
+    super.email,
+    super.profilePicture,
+    super.role,
+    super.isVerified,
+    super.createdAt,
+    super.lastLogin,
     this.accessToken,
-  }) : super(
-    id: id,
-    firstName: firstName,
-    lastName: lastName,
-    phone: phone,
-    email: email,
-    profilePicture: profilePicture,
-    role: role,
-    isVerified: isVerified,
-    status: status,
-  );
-  
+  });
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      phone: json['phone'],
+      id: json['id']?.toString() ?? '',
+      firstName: json['first_name'] ?? '',
+      lastName: json['last_name'] ?? '',
+      phone: json['phone'] ?? '',
       email: json['email'],
       profilePicture: json['profile_picture'],
-      role: json['role'],
+      role: json['role'] ?? 'passenger',
       isVerified: json['is_verified'] ?? false,
-      status: json['status'] ?? 'active',
-      accessToken: json['accessToken'],
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.tryParse(json['created_at'])
+              : null,
+      lastLogin:
+          json['last_login'] != null
+              ? DateTime.tryParse(json['last_login'])
+              : null,
+      accessToken: json['accessToken'], // JWT token from backend
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -51,13 +50,14 @@ class UserModel extends User {
       'profile_picture': profilePicture,
       'role': role,
       'is_verified': isVerified,
-      'status': status,
+      'created_at': createdAt?.toIso8601String(),
+      'last_login': lastLogin?.toIso8601String(),
       'accessToken': accessToken,
     };
   }
-  
+
   UserModel copyWith({
-    int? id,
+    String? id,
     String? firstName,
     String? lastName,
     String? phone,
@@ -65,7 +65,8 @@ class UserModel extends User {
     String? profilePicture,
     String? role,
     bool? isVerified,
-    String? status,
+    DateTime? createdAt,
+    DateTime? lastLogin,
     String? accessToken,
   }) {
     return UserModel(
@@ -77,8 +78,14 @@ class UserModel extends User {
       profilePicture: profilePicture ?? this.profilePicture,
       role: role ?? this.role,
       isVerified: isVerified ?? this.isVerified,
-      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      lastLogin: lastLogin ?? this.lastLogin,
       accessToken: accessToken ?? this.accessToken,
     );
+  }
+
+  @override
+  String toString() {
+    return 'UserModel(id: $id, firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, role: $role)';
   }
 }

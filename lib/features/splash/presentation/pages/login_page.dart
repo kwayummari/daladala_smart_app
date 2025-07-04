@@ -33,15 +33,15 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState?.validate() ?? false) {
       // Hide keyboard
       FocusScope.of(context).unfocus();
-      
+
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       final result = await authProvider.login(
         phone: _phoneController.text,
         password: _passwordController.text,
         rememberMe: _rememberMe,
       );
-      
+
       if (mounted) {
         result.fold(
           (failure) {
@@ -50,9 +50,9 @@ class _LoginPageState extends State<LoginPage> {
           },
           (user) {
             // Navigate to home page
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) =>  HomePage()),
-            );
+            Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute(builder: (_) => HomePage()));
           },
         );
       }
@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -80,8 +80,8 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Image.asset(
                         'assets/images/logo.png',
-                        width: 100,
-                        height: 100,
+                        width: 200,
+                        height: 200,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                
+
                 // Phone field
                 CustomInput(
                   label: 'Phone Number',
@@ -110,9 +110,9 @@ class _LoginPageState extends State<LoginPage> {
                   prefix: const Icon(Icons.phone),
                   validator: Validators.validatePhone,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password field
                 CustomInput(
                   label: 'Password',
@@ -122,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                   prefix: const Icon(Icons.lock),
                   validator: Validators.validatePassword,
                 ),
-                
+
                 // Remember me and Forgot password
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -145,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       ),
-                      
+
                       // Forgot password button
                       TextButton(
                         onPressed: () {
@@ -161,16 +161,16 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                
+
                 // Login button
                 CustomButton(
                   text: 'Log In',
                   onPressed: _login,
                   isLoading: authProvider.isLoading,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Register link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

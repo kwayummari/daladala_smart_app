@@ -12,8 +12,6 @@ abstract class AuthRepository {
   
   /// Registers a new user with the given information
   Future<Either<Failure, User>> register({
-    required String firstName,
-    required String lastName,
     required String phone,
     required String email,
     required String password,
@@ -34,5 +32,13 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> resetPassword({
     required String token,
     required String password,
+  });
+
+  Future<Either<Failure, User>> verifyAccount({
+    required String identifier,
+    required String code,
+  });
+  Future<Either<Failure, void>> resendVerificationCode({
+    required String identifier,
   });
 }

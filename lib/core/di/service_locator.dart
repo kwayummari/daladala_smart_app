@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/core/network/api_client.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/cancel_booking_usecase.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/get_booking_details_usecase.dart';
 import 'package:daladala_smart_app/features/trips/data/datasources/trip_datasource.dart';
@@ -86,8 +87,9 @@ Future<void> setupServiceLocator() async {
   );
   
   // Auth Feature
+  getIt.registerSingleton<ApiClient>(ApiClient());
   getIt.registerSingleton<AuthDataSource>(
-    AuthDataSourceImpl(dioClient: getIt<DioClient>())
+    AuthDataSourceImpl(apiClient: getIt<ApiClient>()),
   );
   
   getIt.registerSingleton<AuthRepository>(
@@ -116,6 +118,7 @@ Future<void> setupServiceLocator() async {
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       logoutUseCase: getIt<LogoutUseCase>(),
+      authRepository: getIt<AuthRepository>(),
     )
   );
   

@@ -64,8 +64,6 @@ class AuthRepositoryImpl implements AuthRepository {
   
   @override
   Future<Either<Failure, User>> register({
-    required String firstName,
-    required String lastName,
     required String phone,
     required String email,
     required String password,
@@ -73,8 +71,6 @@ class AuthRepositoryImpl implements AuthRepository {
     if (await networkInfo.isConnected) {
       try {
         final userModel = await dataSource.register(
-          firstName: firstName,
-          lastName: lastName,
           phone: phone,
           email: email,
           password: password,
@@ -177,6 +173,57 @@ class AuthRepositoryImpl implements AuthRepository {
         return Left(InputFailure(message: e.message ?? 'Invalid token'));
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
+      }
+    } else {
+      return Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+
+
+  @override
+  Future<Either<Failure, User>> verifyAccount({
+    required String identifier,
+    required String code,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final userModel = await dataSource.verifyAccount(
+          identifier: identifier,
+          code: code,
+        );
+
+        // Save auth token if available
+        if (userModel.accessToken != null) {
+          await secureStorage.saveAuthToken(userModel.accessToken!);
+        }
+
+        // Save user data
+        await localStorage.saveObject(
+          AppConstants.keyAuthUser,
+          userModel.toJson(),
+        );
+
+        return Right(userModel);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message ?? 'Verification failed'));
+      }
+    } else {
+      return Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resendVerificationCode({
+    required String identifier,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await dataSource.resendVerificationCode(identifier: identifier);
+        return const Right(null);
+      } on ServerException catch (e) {
+        return Left(
+          ServerFailure(message: e.message ?? 'Failed to resend code'),
+        );
       }
     } else {
       return Left(NetworkFailure(message: 'No internet connection'));

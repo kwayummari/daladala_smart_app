@@ -80,7 +80,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 // Image
                 const SizedBox(height: 24),
                 Image.asset(
-                  'assets/images/forgot_password.png',
+                  'assets/images/logo.png',
                   height: 180,
                 ),
                 const SizedBox(height: 32),

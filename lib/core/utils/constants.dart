@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class AppConstants {
   AppConstants._();
   
@@ -22,6 +24,11 @@ class AppConstants {
   static const String keyLanguage = 'language';
   static const String keyIsFirstRun = 'is_first_run';
   static const String keyLastSyncTime = 'last_sync_time';
+
+  // MediaQuery Data
+  static double getWidth(BuildContext context) => MediaQuery.of(context).size.width;
+  static double getHeight(BuildContext context) =>
+      MediaQuery.of(context).size.height;
   
   // Default values
   static const int itemsPerPage = 10;

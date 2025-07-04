@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
@@ -10,11 +11,13 @@ class AuthProvider extends ChangeNotifier {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
   final LogoutUseCase logoutUseCase;
+  final AuthRepository authRepository;
   
   AuthProvider({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.logoutUseCase,
+    required this.authRepository,
   });
   
   bool _isLoading = false;
@@ -22,6 +25,49 @@ class AuthProvider extends ChangeNotifier {
   
   User? _currentUser;
   User? get currentUser => _currentUser;
+
+  Future<Either<Failure, User>> verifyAccount({
+    required String identifier,
+    required String code,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await authRepository.verifyAccount(
+      identifier: identifier,
+      code: code,
+    );
+
+    result.fold(
+      (failure) {
+        // Handle failure - do nothing here, just log or handle errors
+      },
+      (user) {
+        _currentUser = user; // This is the actual User object
+      },
+    );
+
+    _isLoading = false;
+    notifyListeners();
+
+    return result; // Return the Either<Failure, User>
+  }
+
+  Future<Either<Failure, void>> resendVerificationCode({
+    required String identifier
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await authRepository.resendVerificationCode(
+      identifier: identifier,
+    );
+
+    _isLoading = false;
+    notifyListeners();
+
+    return result;
+  }
   
   Future<Either<Failure, User>> login({
     required String phone,
@@ -55,8 +101,6 @@ class AuthProvider extends ChangeNotifier {
   }
   
   Future<Either<Failure, User>> register({
-    required String firstName,
-    required String lastName,
     required String phone,
     required String email,
     required String password,
@@ -65,8 +109,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     
     final params = RegisterParams(
-      firstName: firstName,
-      lastName: lastName,
       phone: phone,
       email: email,
       password: password,

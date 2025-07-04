@@ -1,7 +1,8 @@
+// lib/features/auth/domain/entities/user.dart
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
-  final int id;
+  final String id;
   final String firstName;
   final String lastName;
   final String phone;
@@ -9,8 +10,9 @@ class User extends Equatable {
   final String? profilePicture;
   final String role;
   final bool isVerified;
-  final String status;
-  
+  final DateTime? createdAt;
+  final DateTime? lastLogin;
+
   const User({
     required this.id,
     required this.firstName,
@@ -18,21 +20,26 @@ class User extends Equatable {
     required this.phone,
     this.email,
     this.profilePicture,
-    required this.role,
-    required this.isVerified,
-    required this.status,
+    this.role = 'passenger',
+    this.isVerified = false,
+    this.createdAt,
+    this.lastLogin,
   });
-  
+
   String get fullName => '$firstName $lastName';
-  
-  bool get isDriver => role == 'driver';
-  
-  bool get isOperator => role == 'operator';
-  
-  bool get isAdmin => role == 'admin';
-  
-  bool get isActive => status == 'active';
-  
+
+  String get displayPhone {
+    // Format Tanzanian phone number for display
+    if (phone.startsWith('+255')) {
+      return phone;
+    } else if (phone.startsWith('255')) {
+      return '+$phone';
+    } else if (phone.startsWith('0')) {
+      return '+255${phone.substring(1)}';
+    }
+    return phone;
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -43,6 +50,7 @@ class User extends Equatable {
     profilePicture,
     role,
     isVerified,
-    status,
+    createdAt,
+    lastLogin,
   ];
 }

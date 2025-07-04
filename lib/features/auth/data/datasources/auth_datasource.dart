@@ -1,135 +1,260 @@
-import '../../../../core/error/exceptions.dart';
-import '../../../../core/network/dio_client.dart';
+// lib/features/auth/data/datasources/auth_datasource.dart
+import 'package:daladala_smart_app/core/error/exceptions.dart';
+import 'package:daladala_smart_app/core/error/failures.dart';
+import 'package:daladala_smart_app/core/network/api_client.dart';
+import 'package:daladala_smart_app/features/auth/domain/entities/user.dart';
+import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/utils/constants.dart';
 import '../models/user_model.dart';
 
 abstract class AuthDataSource {
-  Future<UserModel> login({
-    required String phone,
-    required String password,
-  });
-  
+  Future<UserModel> login({required String phone, required String password});
+
   Future<UserModel> register({
-    required String firstName,
-    required String lastName,
     required String phone,
     required String email,
     required String password,
   });
-  
+
   Future<void> logout();
-  
-  Future<void> requestPasswordReset({
-    required String phone,
+  Future<UserModel?> getCurrentUser();
+
+  Future<void> requestPasswordReset({required String phone});
+  Future<void> resetPassword({required String token, required String password});
+
+  Future<Either<Failure, void>> resendVerificationCode({
+    required String identifier,
   });
-  
-  Future<void> resetPassword({
-    required String token,
-    required String password,
+
+  Future<UserModel> verifyAccount({
+    required String identifier,
+    required String code,
   });
 }
 
 class AuthDataSourceImpl implements AuthDataSource {
-  final DioClient dioClient;
-  
-  AuthDataSourceImpl({required this.dioClient});
-  
+  final ApiClient apiClient;
+
+  AuthDataSourceImpl({required this.apiClient});
+
   @override
   Future<UserModel> login({
     required String phone,
     required String password,
   }) async {
     try {
-      final response = await dioClient.post(
+      final response = await apiClient.dio.post(
         '${AppConstants.authEndpoint}/login',
-        data: {
-          'phone': phone,
-          'password': password,
-        },
+        data: {'phone': phone, 'password': password},
       );
-      
-      if (response['status'] == 'success') {
-        return UserModel.fromJson(response['data']);
+
+      if (response.statusCode == 200 && response.data['status'] == 'success') {
+        final userData = response.data['data'];
+
+        // Store the token
+        await apiClient.setAuthToken(userData['accessToken']);
+
+        return UserModel.fromJson(userData);
       } else {
-        throw ServerException(message: response['message']);
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: response.data['message'] ?? 'Login failed',
+        );
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw DioException(
+          requestOptions: e.requestOptions,
+          response: e.response,
+          message: 'Invalid phone number or password',
+        );
+      } else if (e.response?.statusCode == 403) {
+        throw DioException(
+          requestOptions: e.requestOptions,
+          response: e.response,
+          message: 'Account is not active',
+        );
+      }
+      throw DioException(
+        requestOptions: e.requestOptions,
+        response: e.response,
+        message: e.response?.data['message'] ?? 'Login failed',
+      );
     } catch (e) {
-      rethrow;
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: '${AppConstants.authEndpoint}/login',
+        ),
+        message: 'Network error. Please try again.',
+      );
     }
   }
-  
+
   @override
   Future<UserModel> register({
-    required String firstName,
-    required String lastName,
     required String phone,
     required String email,
     required String password,
   }) async {
     try {
-      final response = await dioClient.post(
+      final response = await apiClient.dio.post(
         '${AppConstants.authEndpoint}/register',
-        data: {
-          'first_name': firstName,
-          'last_name': lastName,
-          'phone': phone,
-          'email': email,
-          'password': password,
-        },
+        data: {'phone': phone, 'email': email, 'password': password},
       );
-      
-      if (response['status'] == 'success') {
-        // After registration, we need to login to get the token
-        return await login(phone: phone, password: password);
+
+      if (response.statusCode == 201 && response.data['status'] == 'success') {
+        // Don't auto-login, just return user data from registration response
+        final userData = response.data['data'];
+
+        return UserModel(
+          id: userData['user_id'].toString(),
+          firstName: '', // Will be updated in profile later
+          lastName: '', // Will be updated in profile later
+          phone: userData['phone'],
+          email: userData['email'],
+          role: 'passenger',
+          isVerified: false, // User needs to verify first
+        );
       } else {
-        throw ServerException(message: response['message']);
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: response.data['message'] ?? 'Registration failed',
+        );
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final errorMessage =
+            e.response?.data['message'] ?? 'Registration failed';
+        if (errorMessage.contains('Phone number is already registered')) {
+          throw DioException(
+            requestOptions: e.requestOptions,
+            response: e.response,
+            message: 'This phone number is already registered',
+          );
+        }
+        if (e.response?.data['errors'] != null) {
+          final errors = e.response!.data['errors'] as List;
+          throw DioException(
+            requestOptions: e.requestOptions,
+            response: e.response,
+            message: errors.first['msg'] ?? 'Validation error',
+          );
+        }
+      }
+      throw DioException(
+        requestOptions: e.requestOptions,
+        response: e.response,
+        message: e.response?.data['message'] ?? 'Registration failed',
+      );
     } catch (e) {
-      rethrow;
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: '${AppConstants.authEndpoint}/register',
+        ),
+        message: 'Network error. Please try again.',
+      );
     }
   }
-  
+
   @override
   Future<void> logout() async {
-    // No need to make API call for logout since we're using token-based auth
-    // Just clear the token on the client side
-    return;
-  }
-  
-  @override
-  Future<void> requestPasswordReset({required String phone}) async {
     try {
-      final response = await dioClient.post(
-        '${AppConstants.authEndpoint}/request-reset',
-        data: {
-          'phone': phone,
-        },
-      );
-      
-      if (response['status'] != 'success') {
-        throw ServerException(message: response['message']);
-      }
+      // Clear the stored token
+      await apiClient.clearAuthToken();
+
+      // Call logout endpoint (optional - for server-side token invalidation)
+      await apiClient.dio.post('${AppConstants.authEndpoint}/logout');
     } catch (e) {
-      rethrow;
+      // Even if API call fails, clear local token
+      await apiClient.clearAuthToken();
     }
   }
-  
+
   @override
-  Future<void> resetPassword({required String token, required String password}) async {
+  Future<UserModel?> getCurrentUser() async {
     try {
-      final response = await dioClient.post(
-        '${AppConstants.authEndpoint}/reset-password',
-        data: {
-          'token': token,
-          'password': password,
-        },
+      final token = await apiClient.getAuthToken();
+      if (token == null) return null;
+
+      final response = await apiClient.dio.get(
+        '${AppConstants.userEndpoint}/profile',
       );
-      
-      if (response['status'] != 'success') {
-        throw ServerException(message: response['message']);
+
+      if (response.statusCode == 200 && response.data['status'] == 'success') {
+        return UserModel.fromJson(response.data['data']['user']);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> requestPasswordReset({required String phone}) async {
+    try {
+      await apiClient.dio.post(
+        '${AppConstants.authEndpoint}/request-reset',
+        data: {'phone': phone},
+      );
+    } catch (e) {
+      throw ServerException(message: 'Failed to request password reset');
+    }
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    try {
+      await apiClient.dio.post(
+        '${AppConstants.authEndpoint}/reset-password',
+        data: {'token': token, 'new_password': password},
+      );
+    } catch (e) {
+      throw ServerException(message: 'Failed to reset password');
+    }
+  }
+
+  @override
+  Future<UserModel> verifyAccount({
+    required String identifier,
+    required String code,
+  }) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/auth/verify',
+        data: {'identifier': identifier, 'code': code},
+      );
+
+      if (response.data['status'] == 'success') {
+        final userData = response.data['data'];
+        return UserModel.fromJson(
+          userData['user'],
+        ).copyWith(accessToken: userData['accessToken']);
+      } else {
+        throw ServerException(message: response.data['message']);
       }
     } catch (e) {
-      rethrow;
+      rethrow; // Let repository handle the Either wrapping
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resendVerificationCode({required String identifier}) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/auth/resend-code',
+        data: {'identifier': identifier},
+      );
+
+      if (response.data['status'] != 'success') {
+        return Left(ServerFailure(message: response.data['message']));
+      }
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(message: 'Failed to resend verification code'));
     }
   }
 }
