@@ -4,7 +4,7 @@ enum ButtonType { primary, secondary, text }
 
 class CustomButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed; // Changed to nullable
   final ButtonType type;
   final bool isLoading;
   final bool isFullWidth;
@@ -14,6 +14,10 @@ class CustomButton extends StatelessWidget {
   final double borderRadius;
   final EdgeInsets padding;
   final TextStyle? textStyle;
+  final bool disabled; // Made non-nullable with default value
+  final Color? backgroundColor; // Added for custom background color
+  final Color? textColor; // Added for custom text color
+  final Color? borderColor; // Added for custom border color
 
   const CustomButton({
     super.key,
@@ -28,11 +32,37 @@ class CustomButton extends StatelessWidget {
     this.borderRadius = 10,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
     this.textStyle,
+    this.disabled = false, // Default to false
+    this.backgroundColor,
+    this.textColor,
+    this.borderColor,
   });
+
+  // Convenience constructor for disabled state
+  const CustomButton.disabled({
+    super.key,
+    required this.text,
+    this.onPressed,
+    this.type = ButtonType.primary,
+    this.isLoading = false,
+    this.isFullWidth = true,
+    this.icon,
+    this.width,
+    this.height = 50,
+    this.borderRadius = 10,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+    this.textStyle,
+    this.backgroundColor,
+    this.textColor,
+    this.borderColor,
+  }) : disabled = true;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Determine if button should be disabled
+    final bool isDisabled = disabled || isLoading || onPressed == null;
 
     Widget buttonChild() {
       if (isLoading) {
@@ -41,7 +71,7 @@ class CustomButton extends StatelessWidget {
           width: 24,
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(
-              type == ButtonType.primary ? Colors.white : theme.primaryColor,
+              _getLoadingColor(theme, isDisabled),
             ),
             strokeWidth: 2.5,
           ),
@@ -50,23 +80,13 @@ class CustomButton extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: _getForegroundColor(theme),
-            ),
+            Icon(icon, size: 18, color: _getForegroundColor(theme, isDisabled)),
             const SizedBox(width: 8),
-            Text(
-              text,
-              style: textStyle ?? _getTextStyle(theme),
-            ),
+            Text(text, style: textStyle ?? _getTextStyle(theme, isDisabled)),
           ],
         );
       } else {
-        return Text(
-          text,
-          style: textStyle ?? _getTextStyle(theme),
-        );
+        return Text(text, style: textStyle ?? _getTextStyle(theme, isDisabled));
       }
     }
 
@@ -80,11 +100,12 @@ class CustomButton extends StatelessWidget {
     switch (type) {
       case ButtonType.primary:
         return ElevatedButton(
-          onPressed: isLoading ? null : onPressed,
+          onPressed: isDisabled ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: theme.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
+            backgroundColor: _getBackgroundColor(theme, isDisabled),
+            foregroundColor: _getForegroundColor(theme, isDisabled),
+            elevation: isDisabled ? 0 : 2,
+            shadowColor: isDisabled ? Colors.transparent : null,
             padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
@@ -92,12 +113,18 @@ class CustomButton extends StatelessWidget {
           ),
           child: buttonContent,
         );
+
       case ButtonType.secondary:
         return OutlinedButton(
-          onPressed: isLoading ? null : onPressed,
+          onPressed: isDisabled ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: theme.primaryColor,
-            side: BorderSide(color: theme.primaryColor, width: 1.5),
+            foregroundColor: _getForegroundColor(theme, isDisabled),
+            backgroundColor:
+                isDisabled ? Colors.grey.shade100 : Colors.transparent,
+            side: BorderSide(
+              color: _getBorderColor(theme, isDisabled),
+              width: 1.5,
+            ),
             padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
@@ -105,11 +132,14 @@ class CustomButton extends StatelessWidget {
           ),
           child: buttonContent,
         );
+
       case ButtonType.text:
         return TextButton(
-          onPressed: isLoading ? null : onPressed,
+          onPressed: isDisabled ? null : onPressed,
           style: TextButton.styleFrom(
-            foregroundColor: theme.primaryColor,
+            foregroundColor: _getForegroundColor(theme, isDisabled),
+            backgroundColor:
+                isDisabled ? Colors.transparent : Colors.transparent,
             padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
@@ -120,29 +150,73 @@ class CustomButton extends StatelessWidget {
     }
   }
 
-  TextStyle _getTextStyle(ThemeData theme) {
+  TextStyle _getTextStyle(ThemeData theme, bool isDisabled) {
+    Color color;
+
+    if (textColor != null && !isDisabled) {
+      color = textColor!;
+    } else {
+      switch (type) {
+        case ButtonType.primary:
+          color = isDisabled ? Colors.grey.shade500 : Colors.white;
+          break;
+        case ButtonType.secondary:
+        case ButtonType.text:
+          color = isDisabled ? Colors.grey.shade400 : theme.primaryColor;
+          break;
+      }
+    }
+
+    return theme.textTheme.labelLarge!.copyWith(
+      color: color,
+      fontWeight: FontWeight.w600,
+    );
+  }
+
+  Color _getForegroundColor(ThemeData theme, bool isDisabled) {
+    if (textColor != null && !isDisabled) {
+      return textColor!;
+    }
+
     switch (type) {
       case ButtonType.primary:
-        return theme.textTheme.labelLarge!.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        );
+        return isDisabled ? Colors.grey.shade500 : Colors.white;
       case ButtonType.secondary:
       case ButtonType.text:
-        return theme.textTheme.labelLarge!.copyWith(
-          color: theme.primaryColor,
-          fontWeight: FontWeight.w600,
-        );
+        return isDisabled ? Colors.grey.shade400 : theme.primaryColor;
     }
   }
 
-  Color _getForegroundColor(ThemeData theme) {
+  Color _getBackgroundColor(ThemeData theme, bool isDisabled) {
+    if (backgroundColor != null && !isDisabled) {
+      return backgroundColor!;
+    }
+
     switch (type) {
       case ButtonType.primary:
-        return Colors.white;
+        return isDisabled ? Colors.grey.shade300 : theme.primaryColor;
+      case ButtonType.secondary:
+        return isDisabled ? Colors.grey.shade100 : Colors.transparent;
+      case ButtonType.text:
+        return Colors.transparent;
+    }
+  }
+
+  Color _getBorderColor(ThemeData theme, bool isDisabled) {
+    if (borderColor != null && !isDisabled) {
+      return borderColor!;
+    }
+
+    return isDisabled ? Colors.grey.shade300 : theme.primaryColor;
+  }
+
+  Color _getLoadingColor(ThemeData theme, bool isDisabled) {
+    switch (type) {
+      case ButtonType.primary:
+        return isDisabled ? Colors.grey.shade500 : Colors.white;
       case ButtonType.secondary:
       case ButtonType.text:
-        return theme.primaryColor;
+        return isDisabled ? Colors.grey.shade400 : theme.primaryColor;
     }
   }
 }

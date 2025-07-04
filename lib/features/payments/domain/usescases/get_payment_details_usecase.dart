@@ -1,4 +1,5 @@
 // lib/features/payments/domain/usecases/get_payment_details_usecase.dart
+import 'package:daladala_smart_app/features/payments/presentation/providers/payment_provider.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -14,10 +15,4 @@ class GetPaymentDetailsUseCase implements UseCase<Payment, GetPaymentDetailsPara
   Future<Either<Failure, Payment>> call(GetPaymentDetailsParams params) async {
     return await repository.getPaymentDetails(params.paymentId);
   }
-}
-
-class GetPaymentDetailsParams {
-  final int paymentId;
-
-  GetPaymentDetailsParams({required this.paymentId});
 }

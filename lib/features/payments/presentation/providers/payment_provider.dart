@@ -1,6 +1,7 @@
 // lib/features/payments/presentation/providers/payment_provider.dart
 import 'dart:async';
 import 'package:daladala_smart_app/core/error/failures.dart';
+import 'package:daladala_smart_app/core/usecases/usecase.dart';
 import 'package:daladala_smart_app/features/payments/domain/usescases/check_payment_status_usecase.dart';
 import 'package:daladala_smart_app/features/payments/domain/usescases/get_payment_details_usecase.dart';
 import 'package:daladala_smart_app/features/payments/domain/usescases/get_payment_history_usecase.dart';
@@ -11,14 +12,14 @@ import '../../domain/entities/payment.dart';
 class PaymentProvider extends ChangeNotifier {
   final ProcessPaymentUseCase processPaymentUseCase;
   final GetPaymentHistoryUseCase getPaymentHistoryUseCase;
-  final GetPaymentDetailsUseCase getPaymentDetailsUseCase;
-  final CheckPaymentStatusUseCase checkPaymentStatusUseCase;
+  final GetPaymentDetailsUseCase? getPaymentDetailsUseCase;
+  final CheckPaymentStatusUseCase? checkPaymentStatusUseCase;
 
   PaymentProvider({
     required this.processPaymentUseCase,
     required this.getPaymentHistoryUseCase,
-    required this.getPaymentDetailsUseCase,
-    required this.checkPaymentStatusUseCase,
+    this.getPaymentDetailsUseCase,
+    this.checkPaymentStatusUseCase,
   });
 
   // State variables
@@ -139,7 +140,7 @@ class PaymentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await getPaymentDetailsUseCase(
+      final result = await getPaymentDetailsUseCase!(
         GetPaymentDetailsParams(paymentId: paymentId),
       );
 
@@ -169,7 +170,7 @@ class PaymentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await checkPaymentStatusUseCase(
+      final result = await checkPaymentStatusUseCase!(
         CheckPaymentStatusParams(paymentId: paymentId),
       );
 
@@ -246,22 +247,6 @@ class PaymentProvider extends ChangeNotifier {
   }
 }
 
-// Additional parameters class for mobile money payments
-class ProcessPaymentParams {
-  final int bookingId;
-  final String paymentMethod;
-  final String? phoneNumber;
-  final String? transactionId;
-  final Map<String, dynamic>? paymentDetails;
-
-  ProcessPaymentParams({
-    required this.bookingId,
-    required this.paymentMethod,
-    this.phoneNumber,
-    this.transactionId,
-    this.paymentDetails,
-  });
-}
 
 class GetPaymentDetailsParams {
   final int paymentId;
@@ -275,7 +260,3 @@ class CheckPaymentStatusParams {
   CheckPaymentStatusParams({required this.paymentId});
 }
 
-// NoParams class for use cases that don't need parameters
-class NoParams {
-  const NoParams();
-}

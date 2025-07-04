@@ -1,6 +1,7 @@
 // lib/features/wallet/presentation/pages/wallet_page.dart
 import 'package:daladala_smart_app/core/di/service_locator.dart';
 import 'package:daladala_smart_app/features/wallet/data/datasource/wallet_datasource.dart';
+import 'package:daladala_smart_app/features/wallet/presentation/widgets/wallet_topup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';

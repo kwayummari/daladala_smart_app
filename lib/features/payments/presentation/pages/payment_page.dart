@@ -1,22 +1,37 @@
-// lib/features/payments/presentation/pages/payment_page.dart
-import 'package:daladala_smart_app/features/payments/presentation/widgets/payment_method_option.dart';
+// lib/features/payments/presentation/pages/payment_page.dart - Updated Constructor
+import 'package:daladala_smart_app/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
 import '../../../../core/utils/extensions.dart';
 import '../providers/payment_provider.dart';
+import '../widgets/payment_method_option.dart';
 
 class PaymentPage extends StatefulWidget {
   final int bookingId;
   final double amount;
   final String currency;
 
+  // Optional trip details (for display purposes)
+  final int? tripId;
+  final String? routeName;
+  final String? from;
+  final String? to;
+  final DateTime? startTime;
+  final int? passengerCount;
+
   const PaymentPage({
     super.key,
     required this.bookingId,
     required this.amount,
     this.currency = 'TZS',
+    this.tripId,
+    this.routeName,
+    this.from,
+    this.to,
+    this.startTime,
+    this.passengerCount,
   });
 
   @override
@@ -28,11 +43,46 @@ class _PaymentPageState extends State<PaymentPage> {
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isProcessing = false;
+  bool _showWalletOption = false;
+  double _walletBalance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWalletInfo();
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadWalletInfo() async {
+    try {
+      final walletProvider = Provider.of<WalletProvider>(
+        context,
+        listen: false,
+      );
+      await walletProvider.getWalletBalance();
+
+      setState(() {
+        _walletBalance = walletProvider.balance;
+        _showWalletOption = _walletBalance > 0;
+
+        // Auto-select wallet if user has sufficient balance
+        if (_walletBalance >= widget.amount) {
+          _selectedPaymentMethod = 'wallet';
+        } else {
+          _selectedPaymentMethod = 'mobile_money';
+        }
+      });
+    } catch (e) {
+      // If wallet fails to load, default to mobile money
+      setState(() {
+        _selectedPaymentMethod = 'mobile_money';
+      });
+    }
   }
 
   void _selectPaymentMethod(String method) {
@@ -59,10 +109,66 @@ class _PaymentPageState extends State<PaymentPage> {
       }
     }
 
+    // Check wallet balance for wallet payments
+    if (_selectedPaymentMethod == 'wallet') {
+      if (_walletBalance < widget.amount) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Insufficient wallet balance'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() {
       _isProcessing = true;
     });
 
+    try {
+      if (_selectedPaymentMethod == 'wallet') {
+        // Process wallet payment
+        await _processWalletPayment();
+      } else {
+        // Process other payment methods
+        await _processRegularPayment();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _processWalletPayment() async {
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+
+    final success = await walletProvider.processWalletPayment(
+      bookingId: widget.bookingId,
+    );
+
+    if (mounted) {
+      if (success) {
+        _navigateToSuccess();
+      } else {
+        throw Exception(walletProvider.error ?? 'Wallet payment failed');
+      }
+    }
+  }
+
+  Future<void> _processRegularPayment() async {
     final paymentProvider = Provider.of<PaymentProvider>(
       context,
       listen: false,
@@ -82,70 +188,37 @@ class _PaymentPageState extends State<PaymentPage> {
       );
     }
 
-    try {
-      final success = await paymentProvider.processPayment(
-        bookingId: widget.bookingId,
-        paymentMethod: _selectedPaymentMethod!,
-        phoneNumber:
-            _selectedPaymentMethod == 'mobile_money'
-                ? _phoneController.text.trim()
-                : null,
-      );
+    final success = await paymentProvider.processPayment(
+      bookingId: widget.bookingId,
+      paymentMethod: _selectedPaymentMethod!,
+      phoneNumber:
+          _selectedPaymentMethod == 'mobile_money'
+              ? _phoneController.text.trim()
+              : null,
+    );
 
-      if (mounted) {
-        Navigator.of(context).pop(); // Close processing dialog
+    if (mounted) {
+      Navigator.of(context).pop(); // Close processing dialog
 
-        if (success) {
-          final payment = paymentProvider.currentPayment!;
+      if (success) {
+        final payment = paymentProvider.currentPayment!;
 
-          if (payment.isMobileMoneyPayment && payment.isPending) {
-            // Show mobile money instructions dialog
-            await showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder:
-                  (context) => MobileMoneyInstructionsDialog(
-                    payment: payment,
-                    onCheckStatus: () => _checkPaymentStatus(payment.id),
-                  ),
-            );
-          } else if (payment.isCompleted) {
-            // Show success dialog
-            await showDialog(
-              context: context,
-              builder: (context) => PaymentSuccessDialog(payment: payment),
-            );
-
-            _navigateToSuccess();
-          }
-        } else {
-          // Show error dialog
+        if (payment.isMobileMoneyPayment && payment.isPending) {
+          // Show mobile money instructions dialog
           await showDialog(
             context: context,
+            barrierDismissible: false,
             builder:
-                (context) => PaymentFailedDialog(
-                  error: paymentProvider.error ?? 'Payment failed',
-                  onRetry: _processPayment,
+                (context) => MobileMoneyInstructionsDialog(
+                  payment: payment,
+                  onCheckStatus: () => _checkPaymentStatus(payment.id),
                 ),
           );
+        } else if (payment.isCompleted) {
+          _navigateToSuccess();
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Close processing dialog
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
+      } else {
+        throw Exception(paymentProvider.error ?? 'Payment failed');
       }
     }
   }
@@ -161,12 +234,6 @@ class _PaymentPageState extends State<PaymentPage> {
     if (payment != null && payment.isCompleted) {
       if (mounted) {
         Navigator.of(context).pop(); // Close instructions dialog
-
-        await showDialog(
-          context: context,
-          builder: (context) => PaymentSuccessDialog(payment: payment),
-        );
-
         _navigateToSuccess();
       }
     }
@@ -205,6 +272,39 @@ class _PaymentPageState extends State<PaymentPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Trip details (if provided)
+              if (widget.routeName != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.routeName!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (widget.from != null && widget.to != null) ...[
+                        const SizedBox(height: 8),
+                        Text('${widget.from} → ${widget.to}'),
+                      ],
+                      if (widget.passengerCount != null) ...[
+                        const SizedBox(height: 4),
+                        Text('Passengers: ${widget.passengerCount}'),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // Payment amount card
               Container(
                 width: double.infinity,
@@ -268,6 +368,26 @@ class _PaymentPageState extends State<PaymentPage> {
 
               const SizedBox(height: 16),
 
+              // Wallet option (if available)
+              if (_showWalletOption) ...[
+                PaymentMethodOption(
+                  name: 'Daladala Wallet',
+                  icon: Icons.account_balance_wallet,
+                  description:
+                      'Balance: ${_walletBalance.toStringAsFixed(0)} TZS',
+                  isSelected: _selectedPaymentMethod == 'wallet',
+                  onTap: () => _selectPaymentMethod('wallet'),
+                  enabled: _walletBalance >= widget.amount,
+                  badge: _walletBalance >= widget.amount ? 'Recommended' : null,
+                  badgeColor: Colors.green,
+                  disabledMessage:
+                      _walletBalance < widget.amount
+                          ? 'Insufficient Balance'
+                          : null,
+                ),
+                const SizedBox(height: 12),
+              ],
+
               // Mobile Money options
               PaymentMethodOption(
                 name: 'Mobile Money',
@@ -275,7 +395,10 @@ class _PaymentPageState extends State<PaymentPage> {
                 description: 'Pay with M-Pesa, Tigo Pesa, or Airtel Money',
                 isSelected: _selectedPaymentMethod == 'mobile_money',
                 onTap: () => _selectPaymentMethod('mobile_money'),
-                badge: 'Recommended',
+                badge:
+                    !_showWalletOption || _walletBalance < widget.amount
+                        ? 'Recommended'
+                        : null,
                 badgeColor: Colors.green,
               ),
 
@@ -300,7 +423,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 description: 'Pay with Visa, Mastercard, or other cards',
                 isSelected: _selectedPaymentMethod == 'card',
                 onTap: () => _selectPaymentMethod('card'),
-                enabled: false, // Disabled for now
+                enabled: false,
                 disabledMessage: 'Coming Soon',
               ),
 
@@ -313,19 +436,6 @@ class _PaymentPageState extends State<PaymentPage> {
                 description: 'Pay with cash to the driver',
                 isSelected: _selectedPaymentMethod == 'cash',
                 onTap: () => _selectPaymentMethod('cash'),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Wallet option (if implemented)
-              PaymentMethodOption(
-                name: 'Daladala Wallet',
-                icon: Icons.account_balance_wallet,
-                description: 'Pay from your wallet balance',
-                isSelected: _selectedPaymentMethod == 'wallet',
-                onTap: () => _selectPaymentMethod('wallet'),
-                enabled: false, // Disabled for now
-                disabledMessage: 'Coming Soon',
               ),
 
               const SizedBox(height: 32),
@@ -373,11 +483,10 @@ class _PaymentPageState extends State<PaymentPage> {
         child: SafeArea(
           child: CustomButton(
             text: _isProcessing ? 'Processing...' : 'Pay Now',
-            onPressed: (_selectedPaymentMethod == null || _isProcessing)
-                ? null
-                : () {
-                    _processPayment();
-                  },
+            onPressed:
+                _selectedPaymentMethod == null || _isProcessing
+                    ? null
+                    : _processPayment,
             isLoading: _isProcessing,
             disabled: _selectedPaymentMethod == null,
           ),
