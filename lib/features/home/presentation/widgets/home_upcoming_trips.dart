@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/extensions.dart';
 import '../../../trips/presentation/pages/trip_detail_page.dart';
+import '../../../trips/presentation/providers/trip_provider.dart';
+import '../../../trips/domains/entities/trip.dart';
 
 class HomeUpcomingTrips extends StatefulWidget {
   const HomeUpcomingTrips({super.key});
@@ -12,47 +13,12 @@ class HomeUpcomingTrips extends StatefulWidget {
 }
 
 class _HomeUpcomingTripsState extends State<HomeUpcomingTrips> {
-  bool _isLoading = true;
-  bool _hasTrips = true;
-  
-  // Sample data for demonstration
-  final List<Map<String, dynamic>> _trips = [
-    {
-      'id': 1,
-      'route_name': 'Mbezi - CBD',
-      'start_point': 'Mbezi Mwisho',
-      'end_point': 'Posta CBD',
-      'start_time': DateTime.now().add(const Duration(minutes: 30)),
-      'status': 'scheduled',
-      'vehicle_type': 'daladala',
-      'seat_number': 'A12',
-      'fare_amount': 1500,
-    },
-    {
-      'id': 2,
-      'route_name': 'Kimara - CBD',
-      'start_point': 'Kimara Mwisho',
-      'end_point': 'Posta CBD',
-      'start_time': DateTime.now().add(const Duration(hours: 2)),
-      'status': 'scheduled',
-      'vehicle_type': 'daladala',
-      'seat_number': 'B5',
-      'fare_amount': 1500,
-    },
-  ];
-  
   @override
   void initState() {
     super.initState();
-    _loadUpcomingTrips();
-  }
-  
-  Future<void> _loadUpcomingTrips() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-    
-    setState(() {
-      _isLoading = false;
+    // Load upcoming trips when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TripProvider>().getUpcomingTrips();
     });
   }
 
@@ -76,365 +42,325 @@ class _HomeUpcomingTripsState extends State<HomeUpcomingTrips> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to see all trips
+                    // Navigate to trips page
+                    Navigator.pushNamed(context, '/trips');
                   },
-                  child: const Text('See All'),
+                  child: const Text('View All'),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (!_hasTrips)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.directions_bus_outlined,
-                      size: 48,
-                      color: AppTheme.textTertiaryColor,
+          Consumer<TripProvider>(
+            builder: (context, tripProvider, child) {
+              if (tripProvider.isLoading) {
+                return const SizedBox(
+                  height: 120,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (tripProvider.errorMessage != null) {
+                return Container(
+                  height: 120,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade400),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Failed to load trips',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                        const SizedBox(height: 4),
+                        TextButton(
+                          onPressed: () {
+                            context.read<TripProvider>().getUpcomingTrips();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No upcoming trips',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.textSecondaryColor,
-                      ),
+                  ),
+                );
+              }
+
+              final upcomingTrips = tripProvider.upcomingTrips;
+
+              if (upcomingTrips.isEmpty) {
+                return Container(
+                  height: 120,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.directions_bus_outlined,
+                          color: Colors.grey.shade400,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No upcoming trips',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Book a trip to get started',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Book a trip to get started',
-                      style: TextStyle(
-                        color: AppTheme.textTertiaryColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate to search routes
+                  ),
+                );
+              }
+
+              return SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount:
+                      upcomingTrips.length > 3
+                          ? 3
+                          : upcomingTrips.length, // Show max 3 trips
+                  itemBuilder: (context, index) {
+                    final trip = upcomingTrips[index];
+                    return _TripCard(
+                      trip: trip,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TripDetailPage(tripId: trip.tripId),
+                          ),
+                        );
                       },
-                      child: const Text('Book a Trip'),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _trips.length,
-              itemBuilder: (context, index) {
-                final trip = _trips[index];
-                return _UpcomingTripItem(
-                  id: trip['id'],
-                  routeName: trip['route_name'],
-                  startPoint: trip['start_point'],
-                  endPoint: trip['end_point'],
-                  startTime: trip['start_time'],
-                  status: trip['status'],
-                  vehicleType: trip['vehicle_type'],
-                  seatNumber: trip['seat_number'],
-                  fareAmount: trip['fare_amount'].toDouble(),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TripDetailPage(tripId: trip['id']),
-                      ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 }
 
-class _UpcomingTripItem extends StatelessWidget {
-  final int id;
-  final String routeName;
-  final String startPoint;
-  final String endPoint;
-  final DateTime startTime;
-  final String status;
-  final String vehicleType;
-  final String seatNumber;
-  final double fareAmount;
+class _TripCard extends StatelessWidget {
+  final Trip trip;
   final VoidCallback onTap;
 
-  const _UpcomingTripItem({
-    Key? key,
-    required this.id,
-    required this.routeName,
-    required this.startPoint,
-    required this.endPoint,
-    required this.startTime,
-    required this.status,
-    required this.vehicleType,
-    required this.seatNumber,
-    required this.fareAmount,
-    required this.onTap,
-  }) : super(key: key);
+  const _TripCard({Key? key, required this.trip, required this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Format time
-    final formattedTime = DateFormat('HH:mm').format(startTime);
-    
-    // Determine how to display the time (today, tomorrow, or date)
-    final timeDisplay = startTime.isToday
-        ? 'Today, $formattedTime'
-        : startTime.isTomorrow
-            ? 'Tomorrow, $formattedTime'
-            : '${DateFormat('EEE, d MMM').format(startTime)}, $formattedTime';
-            
-    // Time remaining
-    final now = DateTime.now();
-    final difference = startTime.difference(now);
-    final hoursRemaining = difference.inHours;
-    final minutesRemaining = difference.inMinutes % 60;
-    
-    String timeRemaining;
-    if (hoursRemaining > 0) {
-      timeRemaining = '$hoursRemaining h ${minutesRemaining > 0 ? '$minutesRemaining min' : ''} left';
-    } else {
-      timeRemaining = '$minutesRemaining min left';
-    }
-    
-    Color statusColor;
-    switch (status) {
-      case 'scheduled':
-        statusColor = AppTheme.confirmedColor;
-        break;
-      case 'in_progress':
-        statusColor = AppTheme.inProgressColor;
-        break;
-      case 'completed':
-        statusColor = AppTheme.completedColor;
-        break;
-      case 'cancelled':
-        statusColor = AppTheme.cancelledColor;
-        break;
-      default:
-        statusColor = AppTheme.pendingColor;
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top part with route and status
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+          child: Column(
+            children: [
+              // Trip header with status
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(trip.status).withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        trip.displayRouteName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(trip.status),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getStatusText(trip.status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    vehicleType == 'daladala'
-                        ? Icons.directions_bus
-                        : Icons.directions_bus_filled,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      routeName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          status.replaceAll('_', ' ').capitalize,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Trip details
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Route details
-                  Row(
+
+              // Trip details
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
+                      // Route details
+                      Row(
                         children: [
-                          const Icon(Icons.circle_outlined, size: 14, color: Colors.green),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: Colors.grey.shade300,
+                          Column(
+                            children: [
+                              const Icon(
+                                Icons.circle_outlined,
+                                size: 14,
+                                color: Colors.green,
+                              ),
+                              Container(
+                                width: 1,
+                                height: 24,
+                                color: Colors.grey.shade300,
+                              ),
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: Colors.red,
+                              ),
+                            ],
                           ),
-                          const Icon(Icons.location_on_outlined, size: 14, color: Colors.red),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  trip.displayStartPoint,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  trip.displayEndPoint,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              startPoint,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              endPoint,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const Divider(height: 24),
-                  
-                  // Trip info
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Time
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                      const Spacer(),
+
+                      // Time and other details
+                      Row(
                         children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 4),
                           Text(
-                            timeDisplay,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
+                            DateFormat('HH:mm').format(trip.startTime),
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.warningColor.withOpacity(0.1),
+                              color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              timeRemaining,
-                              style: TextStyle(
-                                color: AppTheme.warningColor,
-                                fontSize: 12,
+                              trip.displayVehiclePlate,
+                              style: const TextStyle(
+                                fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      
-                      // Fare and details button
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            fareAmount.toPrice,
-                            style: TextStyle(
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          OutlinedButton(
-                            onPressed: onTap,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text(
-                              'View Details',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'scheduled':
+        return Colors.blue;
+      case 'active':
+      case 'in_progress':
+        return Colors.green;
+      case 'completed':
+        return Colors.grey;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'scheduled':
+        return 'Scheduled';
+      case 'active':
+      case 'in_progress':
+        return 'Active';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return 'Unknown';
+    }
   }
 }

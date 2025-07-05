@@ -1,5 +1,8 @@
-import 'package:daladala_smart_app/features/trips/domains/entities/trip.dart';
+// lib/features/trips/data/models/trip_model.dart
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../domains/entities/trip.dart';
+import '../../../routes/domain/entities/transport_route.dart';
+import '../../../routes/data/models/route_model.dart';
 
 class TripModel extends Trip {
   const TripModel({
@@ -18,60 +21,45 @@ class TripModel extends Trip {
     super.vehiclePlate,
     super.driverName,
     super.driverRating,
+    super.route,
+    super.availableSeats,
+    super.occupiedSeats,
   });
 
   factory TripModel.fromJson(Map<String, dynamic> json) {
-    LatLng? currentLocation;
-    
-    if (json['currentLocation'] != null) {
-      if (json['currentLocation'] is Map) {
-        final lat = json['currentLocation']['latitude'];
-        final lng = json['currentLocation']['longitude'];
-        if (lat != null && lng != null) {
-          currentLocation = LatLng(
-            double.parse(lat.toString()),
-            double.parse(lng.toString()),
-          );
-        }
-      } else if (json['latitude'] != null && json['longitude'] != null) {
-        currentLocation = LatLng(
-          double.parse(json['latitude'].toString()),
-          double.parse(json['longitude'].toString()),
-        );
-      }
-    }
-    
     return TripModel(
-      id: json['trip_id'] ?? json['id'],
+      id: json['trip_id'] ?? 0,
       scheduleId: json['schedule_id'] ?? 0,
-      routeId: json['route_id'],
-      vehicleId: json['vehicle_id'],
+      routeId: json['route_id'] ?? 0,
+      vehicleId: json['vehicle_id'] ?? 0,
       driverId: json['driver_id'],
-      startTime: json['start_time'] is String
-          ? DateTime.parse(json['start_time'])
-          : json['start_time'],
-      endTime: json['end_time'] != null
-          ? (json['end_time'] is String
-              ? DateTime.parse(json['end_time'])
-              : json['end_time'])
-          : null,
-      status: json['status'],
+      startTime: DateTime.parse(json['start_time']),
+      endTime:
+          json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
+      status: json['status'] ?? 'unknown',
       currentStopId: json['current_stop_id'],
       nextStopId: json['next_stop_id'],
-      currentLocation: currentLocation,
-      routeName: json['route_name'] ?? 
-          (json['route'] != null ? json['route']['route_name'] : null),
-      vehiclePlate: json['vehicle_plate'] ?? 
-          (json['vehicle'] != null ? json['vehicle']['plate_number'] : null),
-      driverName: json['driver_name'] ?? 
-          (json['driver'] != null && json['driver']['user'] != null
-              ? '${json['driver']['user']['first_name']} ${json['driver']['user']['last_name']}'
-              : null),
-      driverRating: json['driver_rating'] != null
-          ? double.parse(json['driver_rating'].toString())
-          : (json['driver'] != null && json['driver']['rating'] != null
-              ? double.parse(json['driver']['rating'].toString())
-              : null),
+      currentLocation:
+          json['current_location'] != null
+              ? LatLng(
+                json['current_location']['latitude'],
+                json['current_location']['longitude'],
+              )
+              : null,
+      routeName: json['Route']?['route_name'] ?? json['route_name'],
+      vehiclePlate: json['Vehicle']?['plate_number'] ?? json['vehicle_plate'],
+      driverName:
+          json['Driver']?['User']?['first_name'] != null
+              ? '${json['Driver']['User']['first_name']} ${json['Driver']['User']['last_name'] ?? ''}'
+                  .trim()
+              : json['driver_name'],
+      driverRating:
+          json['Driver']?['rating']?.toDouble() ??
+          json['driver_rating']?.toDouble(),
+      route: json['Route'] != null ? RouteModel.fromJson(json['Route']) : null,
+      // Don't assign VehicleModel and DriverModel to Trip entity, just use simple properties
+      availableSeats: json['available_seats'],
+      occupiedSeats: json['occupied_seats'],
     );
   }
 
@@ -87,16 +75,154 @@ class TripModel extends Trip {
       'status': status,
       'current_stop_id': currentStopId,
       'next_stop_id': nextStopId,
-      'currentLocation': currentLocation != null
-          ? {
-              'latitude': currentLocation!.latitude,
-              'longitude': currentLocation!.longitude,
-            }
-          : null,
+      if (currentLocation != null)
+        'current_location': {
+          'latitude': currentLocation!.latitude,
+          'longitude': currentLocation!.longitude,
+        },
       'route_name': routeName,
       'vehicle_plate': vehiclePlate,
       'driver_name': driverName,
       'driver_rating': driverRating,
+      'available_seats': availableSeats,
+      'occupied_seats': occupiedSeats,
     };
+  }
+}
+
+// Supporting models for nested objects
+class VehicleModel {
+  final int vehicleId;
+  final String plateNumber;
+  final String vehicleType;
+  final int capacity;
+  final String? color;
+  final bool isAirConditioned;
+
+  const VehicleModel({
+    required this.vehicleId,
+    required this.plateNumber,
+    required this.vehicleType,
+    required this.capacity,
+    this.color,
+    required this.isAirConditioned,
+  });
+
+  factory VehicleModel.fromJson(Map<String, dynamic> json) {
+    return VehicleModel(
+      vehicleId: json['vehicle_id'],
+      plateNumber: json['plate_number'],
+      vehicleType: json['vehicle_type'],
+      capacity: json['capacity'],
+      color: json['color'],
+      isAirConditioned: json['is_air_conditioned'] ?? false,
+    );
+  }
+}
+
+class DriverModel {
+  final int driverId;
+  final double? rating;
+  final int? totalRatings;
+  final UserModel? user;
+
+  const DriverModel({
+    required this.driverId,
+    this.rating,
+    this.totalRatings,
+    this.user,
+  });
+
+  factory DriverModel.fromJson(Map<String, dynamic> json) {
+    return DriverModel(
+      driverId: json['driver_id'],
+      rating: json['rating']?.toDouble(),
+      totalRatings: json['total_ratings'],
+      user: json['User'] != null ? UserModel.fromJson(json['User']) : null,
+    );
+  }
+}
+
+class UserModel {
+  final String firstName;
+  final String? lastName;
+  final String? profilePicture;
+
+  const UserModel({
+    required this.firstName,
+    this.lastName,
+    this.profilePicture,
+  });
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      firstName: json['first_name'],
+      lastName: json['last_name'],
+      profilePicture: json['profile_picture'],
+    );
+  }
+}
+
+class BookingModel {
+  final int bookingId;
+  final int passengerCount;
+  final double fareAmount;
+  final String status;
+  final String paymentStatus;
+  final DateTime bookingTime;
+  final StopModel? pickupStop;
+  final StopModel? dropoffStop;
+
+  const BookingModel({
+    required this.bookingId,
+    required this.passengerCount,
+    required this.fareAmount,
+    required this.status,
+    required this.paymentStatus,
+    required this.bookingTime,
+    this.pickupStop,
+    this.dropoffStop,
+  });
+
+  factory BookingModel.fromJson(Map<String, dynamic> json) {
+    return BookingModel(
+      bookingId: json['booking_id'],
+      passengerCount: json['passenger_count'],
+      fareAmount: json['fare_amount'].toDouble(),
+      status: json['status'],
+      paymentStatus: json['payment_status'],
+      bookingTime: DateTime.parse(json['booking_time']),
+      pickupStop:
+          json['pickup_stop'] != null
+              ? StopModel.fromJson(json['pickup_stop'])
+              : null,
+      dropoffStop:
+          json['dropoff_stop'] != null
+              ? StopModel.fromJson(json['dropoff_stop'])
+              : null,
+    );
+  }
+}
+
+class StopModel {
+  final int stopId;
+  final String stopName;
+  final double latitude;
+  final double longitude;
+
+  const StopModel({
+    required this.stopId,
+    required this.stopName,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory StopModel.fromJson(Map<String, dynamic> json) {
+    return StopModel(
+      stopId: json['stop_id'],
+      stopName: json['stop_name'],
+      latitude: json['latitude'].toDouble(),
+      longitude: json['longitude'].toDouble(),
+    );
   }
 }

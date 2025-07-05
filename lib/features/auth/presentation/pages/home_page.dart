@@ -10,252 +10,239 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../trips/presentation/providers/trip_provider.dart';
+import '../../../routes/presentation/providers/route_provider.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  // Add a global key to access the state from other widgets
+  static final GlobalKey<_HomePageState> homeKey = GlobalKey<_HomePageState>();
+
+  // Updated constructor to use the global key
+  HomePage({Key? key}) : super(key: homeKey);
+
+  // Static method to navigate to routes page
+  static void navigateToRoutes() {
+    homeKey.currentState?.navigateToTab(1);
+  }
+
+  // Static method to navigate to any tab
+  static void navigateToTab(int index) {
+    homeKey.currentState?.navigateToTab(index);
+  }
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
-  
   GoogleMapController? _mapController;
-  final CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
-    zoom: 14.0,
-  );
-  
-  final List<Widget> _pages = [
-    const _HomeContent(),
-    const RoutesPage(),
-    const TripsPage(),
-    const BookingsPage(),
-    const ProfilePage(),
-  ];
-  
+  late AnimationController _refreshAnimationController;
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    // Initialize data loading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+
   @override
   void dispose() {
-    _pageController.dispose();
+    _refreshAnimationController.dispose();
     _mapController?.dispose();
     super.dispose();
   }
-  
-  void _onItemTapped(int index) {
+
+  Future<void> _initializeData() async {
+    final tripProvider = context.read<TripProvider>();
+    final routeProvider = context.read<RouteProvider>();
+
+    // Load initial data
+    await Future.wait([
+      tripProvider.getUpcomingTrips(),
+      routeProvider.getAllRoutes(),
+    ]);
+  }
+
+  Future<void> _refreshData() async {
+    _refreshAnimationController.repeat();
+
+    try {
+      await _initializeData();
+    } finally {
+      _refreshAnimationController.stop();
+      _refreshAnimationController.reset();
+    }
+  }
+
+  void navigateToTab(int index) {
     setState(() {
       _currentIndex = index;
     });
-    _pageController.jumpToPage(index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final user = auth.currentUser;
-    
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        children: [
+          // Home Tab
+          _buildHomeTab(),
+          // Routes Tab
+          const RoutesPage(),
+          // Trips Tab
+          const TripsPage(),
+          // Bookings Tab
+          const BookingsPage(),
+          // Profile Tab
+          const ProfilePage(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onItemTapped,
+        onTap: navigateToTab,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: Colors.grey,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.route), label: 'Routes'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Routes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_bus_outlined),
-            activeIcon: Icon(Icons.directions_bus),
+            icon: Icon(Icons.directions_bus),
             label: 'Trips',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
+            icon: Icon(Icons.receipt_long),
             label: 'Bookings',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
   }
-}
 
-class _HomeContent extends StatefulWidget {
-  const _HomeContent({Key? key}) : super(key: key);
+  Widget _buildHomeTab() {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
 
-  @override
-  State<_HomeContent> createState() => _HomeContentState();
-}
-
-class _HomeContentState extends State<_HomeContent> {
-  GoogleMapController? _mapController;
-  final CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
-    zoom: 14.0,
-  );
-  
-  Set<Marker> _markers = {};
-  
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
-  }
-  
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    
-    // Add some sample markers for bus stops
-    setState(() {
-      _markers = {
-        const Marker(
-          markerId: MarkerId('stop1'),
-          position: LatLng(-6.7889, 39.2083),
-          infoWindow: InfoWindow(title: 'Mwenge Bus Terminal'),
-        ),
-        const Marker(
-          markerId: MarkerId('stop2'),
-          position: LatLng(-6.8123, 39.2875),
-          infoWindow: InfoWindow(title: 'Posta CBD'),
-        ),
-        const Marker(
-          markerId: MarkerId('stop3'),
-          position: LatLng(-6.7801, 39.2082),
-          infoWindow: InfoWindow(title: 'Ubungo Bus Terminal'),
-        ),
-      };
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final user = auth.currentUser;
-    
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Map view
-            SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: GoogleMap(
-                initialCameraPosition: _initialCameraPosition,
-                onMapCreated: _onMapCreated,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                mapToolbarEnabled: false,
-                zoomControlsEnabled: false,
-                markers: _markers,
-              ),
-            ),
-            
-            // Bottom sheet with content
-            DraggableScrollableSheet(
-              initialChildSize: 0.35,
-              minChildSize: 0.15,
-              maxChildSize: 0.85,
-              builder: (context, scrollController) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
+    return RefreshIndicator(
+      key: _refreshIndicatorKey,
+      onRefresh: _refreshData,
+      child: CustomScrollView(
+        slivers: [
+          // App Bar
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome back!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.normal,
+                    ),
                   ),
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Handle
-                        Center(
+                  Text(
+                    user?.firstName != null
+                        ? '${user!.firstName} ${user.lastName ?? ''}'.trim()
+                        : 'Traveler',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+            ),
+            actions: [
+              Consumer<TripProvider>(
+                builder: (context, tripProvider, child) {
+                  return Stack(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                        icon: const Icon(Icons.notifications_outlined),
+                        color: Colors.black87,
+                      ),
+                      if (tripProvider.hasActiveTrips)
+                        Positioned(
+                          right: 8,
+                          top: 8,
                           child: Container(
-                            margin: const EdgeInsets.only(top: 12, bottom: 8),
-                            width: 40,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2.5),
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ),
-                        
-                        // Greeting
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Good morning,',
-                                      style: Theme.of(context).textTheme.bodyLarge,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      user?.firstName ?? 'User',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  // Navigate to notifications
-                                },
-                                icon: const Icon(Icons.notifications_outlined),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Search bar
-                        const HomeSearchBar(),
-                        
-                        // Quick actions
-                        const HomeQuickActions(),
-                        
-                        // Nearby stops
-                        const HomeNearbyStops(),
-                        
-                        // Upcoming trips
-                        const HomeUpcomingTrips(),
-                        
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+
+          // Content
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                // Search Bar
+                const HomeSearchBar(),
+
+                // Quick Actions
+                const HomeQuickActions(),
+
+                // Upcoming Trips
+                const HomeUpcomingTrips(),
+
+                // Nearby Stops
+                const HomeNearbyStops(),
+
+                // Bottom spacing
+                const SizedBox(height: 100),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

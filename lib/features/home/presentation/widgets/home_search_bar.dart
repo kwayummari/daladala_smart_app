@@ -31,14 +31,11 @@ class HomeSearchBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.search,
-              color: AppTheme.textSecondaryColor,
-            ),
+            Icon(Icons.search, color: AppTheme.textSecondaryColor),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Where would you like to go?',
+                'Where to?',
                 style: TextStyle(
                   color: AppTheme.textTertiaryColor,
                   fontSize: 16,

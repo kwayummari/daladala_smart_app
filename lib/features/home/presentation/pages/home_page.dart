@@ -14,9 +14,9 @@ import '../widgets/home_quick_actions.dart';
 class HomePage extends StatefulWidget {
   // Add a global key to access the state from other widgets
   static final GlobalKey<_HomePageState> homeKey = GlobalKey<_HomePageState>();
-  
+
   // Updated constructor to use the global key
-   HomePage({Key? key}) : super(key: homeKey);
+  HomePage({Key? key}) : super(key: homeKey);
 
   // Static method to navigate to routes page
   static void navigateToRoutes() {
@@ -35,13 +35,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
-  
+
   GoogleMapController? _mapController;
   final CameraPosition _initialCameraPosition = const CameraPosition(
     target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
     zoom: 14.0,
   );
-  
+
   final List<Widget> _pages = [
     const _HomeContent(),
     const RoutesPage(),
@@ -49,14 +49,14 @@ class _HomePageState extends State<HomePage> {
     const BookingsPage(),
     const ProfilePage(),
   ];
-  
+
   @override
   void dispose() {
     _pageController.dispose();
     _mapController?.dispose();
     super.dispose();
   }
-  
+
   // Make this method public to allow access from static methods
   void navigateToTab(int index) {
     setState(() {
@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
     });
     _pageController.jumpToPage(index);
   }
-  
+
   void _onItemTapped(int index) {
     navigateToTab(index);
   }
@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.currentUser;
-    
+
     return Scaffold(
       body: PageView(
         controller: _pageController,
@@ -128,18 +128,18 @@ class _HomeContentState extends State<_HomeContent> {
     target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
     zoom: 14.0,
   );
-  
+
   Set<Marker> _markers = {};
-  
+
   @override
   void dispose() {
     _mapController?.dispose();
     super.dispose();
   }
-  
+
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    
+
     // Add some sample markers for bus stops
     setState(() {
       _markers = {
@@ -166,7 +166,7 @@ class _HomeContentState extends State<_HomeContent> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.currentUser;
-    
+
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -184,7 +184,7 @@ class _HomeContentState extends State<_HomeContent> {
                 markers: _markers,
               ),
             ),
-            
+
             // Bottom sheet with content
             DraggableScrollableSheet(
               initialChildSize: 0.35,
@@ -194,7 +194,9 @@ class _HomeContentState extends State<_HomeContent> {
                 return Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
@@ -220,7 +222,7 @@ class _HomeContentState extends State<_HomeContent> {
                             ),
                           ),
                         ),
-                        
+
                         // Greeting
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -232,12 +234,15 @@ class _HomeContentState extends State<_HomeContent> {
                                   children: [
                                     Text(
                                       'Good morning,',
-                                      style: Theme.of(context).textTheme.bodyLarge,
+                                      style:
+                                          Theme.of(context).textTheme.bodyLarge,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      user?.firstName ?? 'User',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      'Ready, Set, Drive',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -253,19 +258,19 @@ class _HomeContentState extends State<_HomeContent> {
                             ],
                           ),
                         ),
-                        
+
                         // Search bar
                         const HomeSearchBar(),
-                        
+
                         // Quick actions
                         const HomeQuickActions(),
-                        
+
                         // Nearby stops
                         const HomeNearbyStops(),
-                        
+
                         // Upcoming trips
                         const HomeUpcomingTrips(),
-                        
+
                         const SizedBox(height: 24),
                       ],
                     ),

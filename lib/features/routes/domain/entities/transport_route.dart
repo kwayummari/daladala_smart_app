@@ -1,3 +1,4 @@
+// lib/features/routes/domain/entities/transport_route.dart
 import 'package:equatable/equatable.dart';
 
 class TransportRoute extends Equatable {
@@ -10,7 +11,7 @@ class TransportRoute extends Equatable {
   final double? distanceKm;
   final int? estimatedTimeMinutes;
   final String status;
-  
+
   const TransportRoute({
     required this.id,
     required this.routeNumber,
@@ -22,7 +23,10 @@ class TransportRoute extends Equatable {
     this.estimatedTimeMinutes,
     required this.status,
   });
-  
+
+  // Add getter for backward compatibility
+  int get routeId => id;
+
   @override
   List<Object?> get props => [
     id,

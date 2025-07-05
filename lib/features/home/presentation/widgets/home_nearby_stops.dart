@@ -1,69 +1,175 @@
-import 'package:daladala_smart_app/features/routes/presentation/pages/stop_detail_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../routes/presentation/providers/route_provider.dart';
+import '../../../routes/domain/entities/stop.dart';
+import '../../../routes/presentation/pages/routes_page.dart';
 
 class HomeNearbyStops extends StatefulWidget {
-  const HomeNearbyStops({Key? key}) : super(key: key);
+  const HomeNearbyStops({super.key});
 
   @override
   State<HomeNearbyStops> createState() => _HomeNearbyStopsState();
 }
 
 class _HomeNearbyStopsState extends State<HomeNearbyStops> {
-  bool _isLoading = true;
-  
-  // Sample data for demonstration purposes
-  final List<Map<String, dynamic>> _stops = [
-    {
-      'id': 1,
-      'name': 'Mwenge Bus Terminal',
-      'distance': 0.3,
-      'routes': 8,
-      'is_major': true,
-    },
-    {
-      'id': 2,
-      'name': 'Ubungo Bus Terminal',
-      'distance': 0.7,
-      'routes': 12,
-      'is_major': true,
-    },
-    {
-      'id': 4,
-      'name': 'Posta CBD',
-      'distance': 1.2,
-      'routes': 10,
-      'is_major': true,
-    },
-    {
-      'id': 3,
-      'name': 'Morocco',
-      'distance': 1.5,
-      'routes': 6,
-      'is_major': false,
-    },
-    {
-      'id': 5,
-      'name': 'Magomeni',
-      'distance': 2.0,
-      'routes': 4,
-      'is_major': false,
-    },
-  ];
-  
+  Position? _currentPosition;
+  bool _isLoadingLocation = true;
+  List<Stop> _nearbyStops = [];
+  bool _isLoadingStops = false;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
-    _loadNearbyStops();
+    _getCurrentLocation();
   }
-  
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      setState(() {
+        _isLoadingLocation = true;
+        _errorMessage = null;
+      });
+
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _errorMessage = 'Location services are disabled.';
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _errorMessage = 'Location permissions are denied.';
+            _isLoadingLocation = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _errorMessage = 'Location permissions are permanently denied.';
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      setState(() {
+        _currentPosition = position;
+        _isLoadingLocation = false;
+      });
+
+      // Load nearby stops
+      await _loadNearbyStops();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to get location: ${e.toString()}';
+        _isLoadingLocation = false;
+      });
+    }
+  }
+
   Future<void> _loadNearbyStops() async {
-    // Simulate API call with a delay
-    await Future.delayed(const Duration(seconds: 1));
-    
+    if (_currentPosition == null) return;
+
     setState(() {
-      _isLoading = false;
+      _isLoadingStops = true;
+      _errorMessage = null;
     });
+
+    try {
+      // Get all routes to find nearby stops
+      final routeProvider = context.read<RouteProvider>();
+      await routeProvider.getAllRoutes();
+
+      final routes = routeProvider.routes;
+      if (routes != null && routes.isNotEmpty) {
+        List<Stop> allStops = [];
+
+        // Collect all stops from all routes
+        for (var route in routes) {
+          // Get stops for each route
+          await routeProvider.getRouteStops(route.id);
+          final stops = routeProvider.stops;
+          if (stops != null && stops.isNotEmpty) {
+            allStops.addAll(stops);
+          }
+        }
+
+        // Filter stops by distance (within 2km)
+        List<Stop> nearbyStops = [];
+        for (var stop in allStops) {
+          double distance = Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            stop.latitude,
+            stop.longitude,
+          );
+
+          if (distance <= 2000) {
+            // 2km radius
+            // Add distance to stop for sorting
+            nearbyStops.add(stop);
+          }
+        }
+
+        // Sort by distance and take first 5
+        nearbyStops.sort((a, b) {
+          double distanceA = Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            a.latitude,
+            a.longitude,
+          );
+          double distanceB = Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            b.latitude,
+            b.longitude,
+          );
+          return distanceA.compareTo(distanceB);
+        });
+
+        setState(() {
+          _nearbyStops = nearbyStops.take(5).toList();
+          _isLoadingStops = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'No routes available';
+          _isLoadingStops = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load nearby stops';
+        _isLoadingStops = false;
+      });
+    }
+  }
+
+  String _formatDistance(double distanceInMeters) {
+    if (distanceInMeters < 1000) {
+      return '${distanceInMeters.round()}m';
+    } else {
+      return '${(distanceInMeters / 1000).toStringAsFixed(1)}km';
+    }
   }
 
   @override
@@ -86,47 +192,140 @@ class _HomeNearbyStopsState extends State<HomeNearbyStops> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to see all nearby stops
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RoutesPage()),
+                    );
                   },
-                  child: const Text('See All'),
+                  child: const Text('View All'),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
+
+          if (_isLoadingLocation || _isLoadingStops)
+            const SizedBox(
+              height: 120,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 8),
+                    Text('Finding nearby stops...'),
+                  ],
+                ),
+              ),
+            )
+          else if (_errorMessage != null)
+            Container(
+              height: 120,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.location_off, color: Colors.orange.shade400),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Location access needed',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(
+                          color: Colors.orange.shade600,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _getCurrentLocation,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_nearbyStops.isEmpty)
+            Container(
+              height: 120,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.location_searching,
+                      color: Colors.grey.shade400,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No nearby stops found',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Try a different location',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           else
-            SizedBox(
-              height: 150,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _stops.length,
-                itemBuilder: (context, index) {
-                  final stop = _stops[index];
-                  return _NearbyStopItem(
-                    id: stop['id'],
-                    name: stop['name'],
-                    distance: stop['distance'],
-                    routes: stop['routes'],
-                    isMajor: stop['is_major'],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => StopDetailPage(stopId: stop['id']),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _nearbyStops.length,
+              itemBuilder: (context, index) {
+                final stop = _nearbyStops[index];
+                final distance = Geolocator.distanceBetween(
+                  _currentPosition!.latitude,
+                  _currentPosition!.longitude,
+                  stop.latitude,
+                  stop.longitude,
+                );
+
+                return _StopCard(
+                  stop: stop,
+                  distance: distance,
+                  onTap: () {
+                    // Navigate to routes page with this stop pre-selected
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RoutesPage()),
+                    );
+                  },
+                );
+              },
             ),
         ],
       ),
@@ -134,153 +333,124 @@ class _HomeNearbyStopsState extends State<HomeNearbyStops> {
   }
 }
 
-class _NearbyStopItem extends StatelessWidget {
-  final int id;
-  final String name;
+class _StopCard extends StatelessWidget {
+  final Stop stop;
   final double distance;
-  final int routes;
-  final bool isMajor;
   final VoidCallback onTap;
 
-  const _NearbyStopItem({
+  const _StopCard({
     Key? key,
-    required this.id,
-    required this.name,
+    required this.stop,
     required this.distance,
-    required this.routes,
-    required this.isMajor,
     required this.onTap,
   }) : super(key: key);
 
+  String _formatDistance(double distanceInMeters) {
+    if (distanceInMeters < 1000) {
+      return '${distanceInMeters.round()}m';
+    } else {
+      return '${(distanceInMeters / 1000).toStringAsFixed(1)}km';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top part with name and distance
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.directions_bus,
-                      color: AppTheme.primaryColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 12,
-                              color: AppTheme.textTertiaryColor,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${distance.toStringAsFixed(1)} km away',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textTertiaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color:
+                      stop.isMajor
+                          ? AppTheme.primaryColor.withOpacity(0.1)
+                          : Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  stop.isMajor ? Icons.location_city : Icons.place,
+                  color:
+                      stop.isMajor
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade600,
+                  size: 20,
+                ),
               ),
-            ),
-            
-            // Divider
-            const Divider(height: 1),
-            
-            // Bottom part with routes info
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$routes Routes',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      stop.stopName,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (stop.address?.isNotEmpty == true) ...[
                       const SizedBox(height: 2),
                       Text(
-                        isMajor ? 'Major Terminal' : 'Regular Stop',
+                        stop.address!,
                         style: TextStyle(
+                          color: Colors.grey.shade600,
                           fontSize: 12,
-                          color: AppTheme.textTertiaryColor,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                  ),
-                  
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatDistance(distance),
+                    style: TextStyle(
                       color: AppTheme.primaryColor,
-                      borderRadius: BorderRadius.circular(12),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
                     ),
-                    child: const Text(
-                      'View',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  if (stop.isMajor) ...[
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        'Major',
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
         ),
       ),
     );

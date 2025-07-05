@@ -1,5 +1,7 @@
+// lib/features/trips/domains/entities/trip.dart
 import 'package:equatable/equatable.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../routes/domain/entities/transport_route.dart';
 
 class Trip extends Equatable {
   final int id;
@@ -13,11 +15,20 @@ class Trip extends Equatable {
   final int? currentStopId;
   final int? nextStopId;
   final LatLng? currentLocation;
+
+  // Simple properties for basic display
   final String? routeName;
   final String? vehiclePlate;
   final String? driverName;
   final double? driverRating;
-  
+
+  // Only include route object (since RouteModel extends TransportRoute properly)
+  final TransportRoute? route;
+
+  // Additional trip info
+  final int? availableSeats;
+  final int? occupiedSeats;
+
   const Trip({
     required this.id,
     required this.scheduleId,
@@ -34,8 +45,23 @@ class Trip extends Equatable {
     this.vehiclePlate,
     this.driverName,
     this.driverRating,
+    this.route,
+    this.availableSeats,
+    this.occupiedSeats,
   });
-  
+
+  // Getter to get trip ID (for consistency with backend)
+  int get tripId => id;
+
+  // Helper getters for route information
+  String get displayRouteName =>
+      routeName ?? route?.routeName ?? 'Unknown Route';
+  String get displayStartPoint => route?.startPoint ?? 'Unknown';
+  String get displayEndPoint => route?.endPoint ?? 'Unknown';
+  String get displayVehiclePlate => vehiclePlate ?? 'N/A';
+  String get displayDriverName => driverName ?? 'Unknown';
+  double get displayDriverRating => driverRating ?? 0.0;
+
   Trip copyWith({
     int? id,
     int? scheduleId,
@@ -52,6 +78,9 @@ class Trip extends Equatable {
     String? vehiclePlate,
     String? driverName,
     double? driverRating,
+    TransportRoute? route,
+    int? availableSeats,
+    int? occupiedSeats,
   }) {
     return Trip(
       id: id ?? this.id,
@@ -69,9 +98,12 @@ class Trip extends Equatable {
       vehiclePlate: vehiclePlate ?? this.vehiclePlate,
       driverName: driverName ?? this.driverName,
       driverRating: driverRating ?? this.driverRating,
+      route: route ?? this.route,
+      availableSeats: availableSeats ?? this.availableSeats,
+      occupiedSeats: occupiedSeats ?? this.occupiedSeats,
     );
   }
-  
+
   @override
   List<Object?> get props => [
     id,
@@ -89,5 +121,8 @@ class Trip extends Equatable {
     vehiclePlate,
     driverName,
     driverRating,
+    route,
+    availableSeats,
+    occupiedSeats,
   ];
 }
