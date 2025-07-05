@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/pages/verification_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -30,39 +29,32 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
 
   @override
   void dispose() {
-    cancel(); // Cancel SMS listening
+    cancel();
     super.dispose();
   }
 
-  // Initialize auto-OTP detection
   Future<void> _initializeAutoOTP() async {
     try {
       await SmsAutoFill().listenForCode;
-      print('📱 SMS Auto-fill initialized');
     } catch (e) {
-      print('❌ SMS Auto-fill initialization failed: $e');
+      debugPrint('SMS Auto-fill initialization failed: $e');
     }
   }
 
-  // Auto-fill callback for SMS OTP
   @override
   void codeUpdated() {
     if (code != null && code!.length == 6) {
       setState(() {
         _verificationCode = code!;
       });
-
-      // Auto-verify when SMS is detected
       _verifyAccount();
-
-      print('📱 Auto-detected SMS code: $code');
     }
   }
 
   Future<void> _verifyAccount() async {
     if (_verificationCode.length != 6) {
       context.showSnackBar(
-        'Please enter the 6-digit verification code',
+        'Please enter the complete verification code',
         isError: true,
       );
       return;
@@ -70,7 +62,6 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    // Use phone as identifier (you can also use email)
     final result = await authProvider.verifyAccount(
       identifier: widget.phone,
       code: _verificationCode,
@@ -85,10 +76,7 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
           });
         },
         (user) {
-          // Success - user is verified and logged in
-          context.showSnackBar('Account verified successfully! Welcome! 🎉');
-
-          // Navigate to home
+          context.showSnackBar('Account verified successfully!');
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => HomePage()),
             (route) => false,
@@ -119,14 +107,26 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
           context.showSnackBar(failure.message, isError: true);
         },
         (success) {
-          context.showSnackBar('New verification code sent! 📱📧');
+          context.showSnackBar('New verification code sent');
           setState(() {
             _verificationCode = '';
           });
-          // Restart SMS listening
           SmsAutoFill().listenForCode;
         },
       );
+    }
+  }
+
+  String _maskContactInfo(String contact) {
+    if (contact.contains('@')) {
+      // Email masking
+      final parts = contact.split('@');
+      if (parts[0].length <= 2) return contact;
+      return '${parts[0].substring(0, 2)}${'*' * (parts[0].length - 2)}@${parts[1]}';
+    } else {
+      // Phone masking
+      if (contact.length <= 4) return contact;
+      return '${contact.substring(0, 4)}${'*' * (contact.length - 4)}';
     }
   }
 
@@ -140,227 +140,192 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false, // Prevent going back
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
-
-              // Icon
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.verified_user,
-                  size: 50,
-                  color: theme.primaryColor,
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Title
-              Text(
-                'Verify Your Account',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 12),
-
-              // Subtitle
-              Text(
-                'Enter the 6-digit code sent to:',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Contact info
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
+              Expanded(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.sms, size: 18, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.phone,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
+                    // Modern verification icon
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.primaryColor,
+                            theme.primaryColor.withOpacity(0.7),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.primaryColor.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.email, size: 18, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.email,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Auto-detection notice
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.auto_fix_high,
-                      color: Colors.blue[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Auto-detecting SMS code...',
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        size: 40,
+                        color: Colors.white,
                       ),
                     ),
+
+                    const SizedBox(height: 32),
+
+                    // Title
+                    Text(
+                      'Verification Code',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Subtitle with masked contact
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: Colors.grey[600],
+                          height: 1.5,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: 'Enter the 6-digit code sent to\n',
+                          ),
+                          TextSpan(
+                            text: _maskContactInfo(widget.phone),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Code input
+                    PinFieldAutoFill(
+                      decoration: BoxLooseDecoration(
+                        textStyle: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        strokeColorBuilder: FixedColorBuilder(
+                          _verificationCode.length == 6
+                              ? theme.primaryColor
+                              : Colors.grey[300]!,
+                        ),
+                        bgColorBuilder: FixedColorBuilder(
+                          _verificationCode.length == 6
+                              ? theme.primaryColor.withOpacity(0.08)
+                              : Colors.grey[50]!,
+                        ),
+                        strokeWidth: 2,
+                        gapSpace: 16,
+                        radius: const Radius.circular(12),
+                      ),
+                      currentCode: _verificationCode,
+                      onCodeSubmitted: (code) {
+                        setState(() {
+                          _verificationCode = code;
+                        });
+                        _verifyAccount();
+                      },
+                      onCodeChanged: (code) {
+                        setState(() {
+                          _verificationCode = code ?? '';
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Verify button
+                    CustomButton(
+                      text: 'Verify Code',
+                      onPressed:
+                          authProvider.isLoading ||
+                                  _verificationCode.length != 6
+                              ? null
+                              : _verifyAccount,
+                      isLoading: authProvider.isLoading,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Resend section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Didn\'t receive the code? ',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _isResending ? null : _resendCode,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child:
+                              _isResending
+                                  ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: theme.primaryColor,
+                                    ),
+                                  )
+                                  : Text(
+                                    'Resend',
+                                    style: TextStyle(
+                                      color: theme.primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 32),
-
-              // Code input with auto-fill
-              PinFieldAutoFill(
-                decoration: BoxLooseDecoration(
-                  textStyle: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
+              // Bottom help text
+              Padding(
+                padding: const EdgeInsets.only(bottom: 32),
+                child: Text(
+                  'Code expires in 10 minutes',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
                   ),
-                  strokeColorBuilder: FixedColorBuilder(
-                    _verificationCode.length == 6
-                        ? theme.primaryColor
-                        : Colors.grey[300]!,
-                  ),
-                  bgColorBuilder: FixedColorBuilder(
-                    _verificationCode.length == 6
-                        ? theme.primaryColor.withOpacity(0.1)
-                        : Colors.grey[50]!,
-                  ),
-                  strokeWidth: 2,
-                  gapSpace: 12,
-                  radius: const Radius.circular(8),
+                  textAlign: TextAlign.center,
                 ),
-                currentCode: _verificationCode,
-                onCodeSubmitted: (code) {
-                  setState(() {
-                    _verificationCode = code;
-                  });
-                  _verifyAccount();
-                },
-                onCodeChanged: (code) {
-                  setState(() {
-                    _verificationCode = code ?? '';
-                  });
-                },
               ),
-
-              const SizedBox(height: 40),
-
-              // Verify button
-              CustomButton(
-                text: 'Verify Account',
-                onPressed:
-                    authProvider.isLoading || _verificationCode.length != 6
-                        ? null
-                        : _verifyAccount,
-                isLoading: authProvider.isLoading,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Resend button
-              TextButton(
-                onPressed: _isResending ? null : _resendCode,
-                child:
-                    _isResending
-                        ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: theme.primaryColor,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Sending...',
-                              style: TextStyle(
-                                color: theme.primaryColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        )
-                        : Text(
-                          'Didn\'t receive the code? Resend',
-                          style: TextStyle(
-                            color: theme.primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Help text
-              Text(
-                'The same code was sent to both your phone and email for your convenience',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 40),
             ],
           ),
         ),
