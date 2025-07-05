@@ -146,16 +146,18 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
         ),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              Expanded(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Top spacer
+                    const SizedBox(height: 60),
+
                     // Modern verification icon
                     Container(
                       width: 80,
@@ -224,39 +226,42 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
                     const SizedBox(height: 48),
 
                     // Code input
-                    PinFieldAutoFill(
-                      decoration: BoxLooseDecoration(
-                        textStyle: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                    Container(
+                      width: 280,
+                      child: PinFieldAutoFill(
+                        decoration: BoxLooseDecoration(
+                          textStyle: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          strokeColorBuilder: FixedColorBuilder(
+                            _verificationCode.length == 6
+                                ? theme.primaryColor
+                                : Colors.grey[300]!,
+                          ),
+                          bgColorBuilder: FixedColorBuilder(
+                            _verificationCode.length == 6
+                                ? theme.primaryColor.withOpacity(0.08)
+                                : Colors.grey[50]!,
+                          ),
+                          strokeWidth: 2,
+                          gapSpace: 8,
+                          radius: const Radius.circular(12),
                         ),
-                        strokeColorBuilder: FixedColorBuilder(
-                          _verificationCode.length == 6
-                              ? theme.primaryColor
-                              : Colors.grey[300]!,
-                        ),
-                        bgColorBuilder: FixedColorBuilder(
-                          _verificationCode.length == 6
-                              ? theme.primaryColor.withOpacity(0.08)
-                              : Colors.grey[50]!,
-                        ),
-                        strokeWidth: 2,
-                        gapSpace: 16,
-                        radius: const Radius.circular(12),
+                        currentCode: _verificationCode,
+                        onCodeSubmitted: (code) {
+                          setState(() {
+                            _verificationCode = code;
+                          });
+                          _verifyAccount();
+                        },
+                        onCodeChanged: (code) {
+                          setState(() {
+                            _verificationCode = code ?? '';
+                          });
+                        },
                       ),
-                      currentCode: _verificationCode,
-                      onCodeSubmitted: (code) {
-                        setState(() {
-                          _verificationCode = code;
-                        });
-                        _verifyAccount();
-                      },
-                      onCodeChanged: (code) {
-                        setState(() {
-                          _verificationCode = code ?? '';
-                        });
-                      },
                     ),
 
                     const SizedBox(height: 48),
@@ -272,7 +277,8 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
                       isLoading: authProvider.isLoading,
                     ),
 
-                    const SizedBox(height: 32),
+                    // Flexible spacer to push bottom content down
+                    Expanded(child: Container()),
 
                     // Resend section
                     Row(
@@ -311,24 +317,25 @@ class _VerificationPageState extends State<VerificationPage> with CodeAutoFill {
                         ),
                       ],
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Bottom help text
+                    Text(
+                      'Code expires in 10 minutes',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[500],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
-
-              // Bottom help text
-              Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Text(
-                  'Code expires in 10 minutes',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
