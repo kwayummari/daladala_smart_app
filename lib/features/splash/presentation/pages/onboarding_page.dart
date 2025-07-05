@@ -232,11 +232,6 @@ class _OnboardingPageState extends State<OnboardingPage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.directions_bus,
-                        color: Colors.white,
-                        size: 24,
-                      ),
                       const SizedBox(width: 8),
                       const Text(
                         'Daladala Smart',
