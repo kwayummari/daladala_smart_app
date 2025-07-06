@@ -165,6 +165,37 @@ class AuthProvider extends ChangeNotifier {
       },
     );
   }
+
+  void updateCurrentUser(User user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+  
+  // Add this method to refresh user from server
+  Future<void> refreshCurrentUser() async {
+    if (_currentUser != null) {
+      try {
+        _isLoading = true;
+        notifyListeners();
+        
+        final result = await authRepository.getCurrentUser();
+        result.fold(
+          (failure) {
+            // Handle failure silently or show error if needed
+            print('Failed to refresh user: ${failure.message}');
+          },
+          (user) {
+            _currentUser = user;
+          },
+        );
+      } catch (e) {
+        print('Error refreshing user: $e');
+      } finally {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
 }
 
 class NoParams {}

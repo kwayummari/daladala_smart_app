@@ -41,4 +41,5 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> resendVerificationCode({
     required String identifier,
   });
+  Future<Either<Failure, User>> getCurrentUser();
 }

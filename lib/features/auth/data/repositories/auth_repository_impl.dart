@@ -229,4 +229,22 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(NetworkFailure(message: 'No internet connection'));
     }
   }
+  @override
+  Future<Either<Failure, User>> getCurrentUser() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final userModel = await dataSource.getCurrentUser();
+        if (userModel != null) {
+          return Right(userModel);
+        } else {
+          return Left(AuthenticationFailure(message: 'User not found'));
+        }
+      } catch (e) {
+        return Left(ServerFailure(message: e.toString()));
+      }
+    } else {
+      return Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+  
 }

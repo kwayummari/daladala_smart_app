@@ -1,3 +1,6 @@
+// lib/features/profile/presentation/pages/edit_profile_page.dart
+import 'dart:io';
+import 'package:daladala_smart_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,8 +24,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   
+  File? _selectedImage;
   bool _isLoading = false;
-  String? _profilePicturePath;
   
   @override
   void initState() {
@@ -52,43 +55,112 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
   
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
-    if (image != null) {
-      setState(() {
-        _profilePicturePath = image.path;
-      });
+    try {
+      final ImagePicker picker = ImagePicker();
+      
+      // Show image source selection
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+      
+      if (source != null) {
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+        
+        if (image != null) {
+          setState(() {
+            _selectedImage = File(image.path);
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
   
   Future<void> _saveProfile() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
       
-      // TODO: Implement update profile functionality
-      // This would typically call an API endpoint to update the user's profile
+      final profileData = {
+        'first_name': _firstNameController.text.trim(),
+        'last_name': _lastNameController.text.trim(),
+        'email': _emailController.text.trim(),
+      };
       
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      final result = await profileProvider.updateProfile(
+        profileData,
+        profileImage: _selectedImage,
+      );
       
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        
-        // Show success message
+        result.fold(
+          (failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(failure.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+          (user) {
+            // Update auth provider with new user data
+            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            authProvider.updateCurrentUser(user);
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile updated successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            
+            Navigator.pop(context);
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text('An error occurred: $e'),
+            backgroundColor: Colors.red,
           ),
         );
-        
-        // Go back
-        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -100,9 +172,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     
     if (user == null) {
       return const Scaffold(
-        body: Center(
-          child: Text('User not found'),
-        ),
+        body: Center(child: Text('User not found')),
       );
     }
     
@@ -111,116 +181,167 @@ class _EditProfilePageState extends State<EditProfilePage> {
         title: const Text('Edit Profile'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Profile picture
+              const SizedBox(height: 20),
+              
+              // Profile Picture Section
               GestureDetector(
                 onTap: _pickImage,
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: _profilePicturePath != null
-                          ? AssetImage(_profilePicturePath!)
-                          : user.profilePicture != null
-                              ? NetworkImage(user.profilePicture!) as ImageProvider
-                              : null,
-                      child: (user.profilePicture == null && _profilePicturePath == null)
-                          ? Text(
-                              '${user.firstName[0]}${user.lastName[0]}',
-                              style: TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryColor,
-                              ),
-                            )
-                          : null,
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.primaryColor,
+                          width: 3,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: _selectedImage != null
+                            ? Image.file(
+                                _selectedImage!,
+                                fit: BoxFit.cover,
+                                width: 120,
+                                height: 120,
+                              )
+                            : user.profilePicture != null
+                                ? Image.network(
+                                    user.profilePicture!,
+                                    fit: BoxFit.cover,
+                                    width: 120,
+                                    height: 120,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildDefaultAvatar();
+                                    },
+                                  )
+                                : _buildDefaultAvatar(),
+                      ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: AppTheme.primaryColor,
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: const Icon(
                           Icons.camera_alt,
                           color: Colors.white,
-                          size: 16,
+                          size: 18,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+              
               const SizedBox(height: 8),
               Text(
-                'Tap to change profile picture',
+                'Tap to change photo',
                 style: TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
                 ),
               ),
               
               const SizedBox(height: 32),
               
-              // Personal information form
+              // Form Fields
               CustomInput(
-                label: 'First Name',
                 controller: _firstNameController,
+                label: 'First Name',
+                prefix: Icon(Icons.person_outline),
                 validator: Validators.validateName,
                 textCapitalization: TextCapitalization.words,
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               
               CustomInput(
-                label: 'Last Name',
                 controller: _lastNameController,
+                label: 'Last Name',
+                prefix: Icon(Icons.person_outline),
                 validator: Validators.validateName,
                 textCapitalization: TextCapitalization.words,
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               
               CustomInput(
-                label: 'Email',
                 controller: _emailController,
-                validator: Validators.validateEmail,
+                label: 'Email Address',
+                prefix: Icon(Icons.email_outlined),
                 keyboardType: TextInputType.emailAddress,
+                validator: Validators.validateEmail,
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               
               CustomInput(
-                label: 'Phone Number',
                 controller: _phoneController,
-                validator: Validators.validatePhone,
-                keyboardType: TextInputType.phone,
-                readOnly: true, // Phone number should not be editable
+                label: 'Phone Number',
+                prefix: Icon(Icons.phone_outlined),
+                enabled: false,
+                hint: 'Contact support to change your phone number',
               ),
               
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
               
-              // Save button
-              CustomButton(
-                text: 'Save Changes',
-                onPressed: _saveProfile,
-                isLoading: _isLoading,
+              // Save Button
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: 'Save Changes',
+                  onPressed: _isLoading ? null : _saveProfile,
+                  isLoading: _isLoading,
+                ),
               ),
+              
+              const SizedBox(height: 20),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    
+    return Container(
+      width: 120,
+      height: 120,
+      color: Colors.grey.shade200,
+      child: user != null && user.firstName.isNotEmpty && user.lastName.isNotEmpty
+          ? Center(
+              child: Text(
+                '${user.firstName[0]}${user.lastName[0]}',
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            )
+          : Icon(
+              Icons.person,
+              size: 50,
+              color: Colors.grey.shade600,
+            ),
     );
   }
 }

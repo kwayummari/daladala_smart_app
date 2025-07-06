@@ -28,19 +28,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       setState(() {
         _isLoading = true;
       });
-      
+
       try {
         // TODO: Implement the request password reset functionality
         // For now, we'll just simulate a successful request
         await Future.delayed(const Duration(seconds: 2));
-        
+
         if (mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ResetPasswordPage(
-                phone: _phoneController.text,
-              ),
+              builder: (_) => ResetPasswordPage(phone: _phoneController.text),
             ),
           );
         }
@@ -61,7 +59,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Forgot Password'),
@@ -79,12 +77,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               children: [
                 // Image
                 const SizedBox(height: 24),
-                Image.asset(
-                  'assets/images/logo.png',
-                  height: 180,
-                ),
+                Image.asset('assets/images/logo.png', height: 180),
                 const SizedBox(height: 32),
-                
+
                 // Title
                 Text(
                   'Forgot Your Password?',
@@ -100,19 +95,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Phone field
                 CustomInput(
                   label: 'Phone Number',
                   hint: 'Enter your phone number',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  prefix: const Icon(Icons.phone),
+                  prefix: Icon(Icons.phone),
                   validator: Validators.validatePhone,
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Submit button
                 CustomButton(
                   text: 'Send Verification Code',

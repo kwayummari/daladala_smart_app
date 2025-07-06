@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -36,11 +37,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => getIt<AuthProvider>()),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => getIt<AuthProvider>(),
+        ),
         ChangeNotifierProvider(create: (_) => getIt<BookingProvider>()),
         ChangeNotifierProvider(create: (_) => getIt<TripProvider>()),
         ChangeNotifierProvider(create: (_) => getIt<RouteProvider>()),
         ChangeNotifierProvider(create: (_) => getIt<PaymentProvider>()),
+        ChangeNotifierProvider<ProfileProvider>(
+          create: (_) => getIt<ProfileProvider>(),
+        ),
       ],
       child: MaterialApp(
         title: 'Daladala Smart',

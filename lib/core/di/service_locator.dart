@@ -1,6 +1,10 @@
 import 'package:daladala_smart_app/core/network/api_client.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/cancel_booking_usecase.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/get_booking_details_usecase.dart';
+import 'package:daladala_smart_app/features/profile/data/datasources/profile_datasource.dart';
+import 'package:daladala_smart_app/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:daladala_smart_app/features/profile/domain/repositories/profile_repository.dart';
+import 'package:daladala_smart_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:daladala_smart_app/features/trips/data/datasources/trip_datasource.dart';
 import 'package:daladala_smart_app/features/trips/data/repositories/trip_repository_impl.dart';
 import 'package:daladala_smart_app/features/trips/domains/repositories/trip_repository.dart';
@@ -55,29 +59,27 @@ Future<void> setupServiceLocator() async {
   // External dependencies
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
-  
+
   getIt.registerSingleton<FlutterSecureStorage>(const FlutterSecureStorage());
-  
+
   // Storage
   getIt.registerSingleton<LocalStorage>(
-    LocalStorageImpl(sharedPreferences: getIt<SharedPreferences>())
+    LocalStorageImpl(sharedPreferences: getIt<SharedPreferences>()),
   );
-  
+
   getIt.registerSingleton<SecureStorage>(
-    SecureStorageImpl(secureStorage: getIt<FlutterSecureStorage>())
+    SecureStorageImpl(secureStorage: getIt<FlutterSecureStorage>()),
   );
-  
+
   // Network
   getIt.registerSingleton<NetworkInfo>(NetworkInfoImpl());
-  
+
   getIt.registerSingleton<Dio>(Dio());
-  
+
   getIt.registerSingleton<AuthInterceptor>(
-    AuthInterceptor(
-      secureStorage: getIt<SecureStorage>(),
-    ),
+    AuthInterceptor(secureStorage: getIt<SecureStorage>()),
   );
-  
+
   getIt.registerSingleton<DioClient>(
     DioClient(
       dio: getIt<Dio>(),
@@ -85,160 +87,176 @@ Future<void> setupServiceLocator() async {
       interceptors: [getIt<AuthInterceptor>()],
     ),
   );
-  
+
   // Auth Feature
   getIt.registerSingleton<ApiClient>(ApiClient());
   getIt.registerSingleton<AuthDataSource>(
     AuthDataSourceImpl(apiClient: getIt<ApiClient>()),
   );
-  
+
   getIt.registerSingleton<AuthRepository>(
     AuthRepositoryImpl(
       dataSource: getIt<AuthDataSource>(),
       networkInfo: getIt<NetworkInfo>(),
       secureStorage: getIt<SecureStorage>(),
       localStorage: getIt<LocalStorage>(),
-    )
+    ),
   );
-  
+
   getIt.registerSingleton<LoginUseCase>(
-    LoginUseCase(repository: getIt<AuthRepository>())
+    LoginUseCase(repository: getIt<AuthRepository>()),
   );
-  
+
   getIt.registerSingleton<RegisterUseCase>(
-    RegisterUseCase(repository: getIt<AuthRepository>())
+    RegisterUseCase(repository: getIt<AuthRepository>()),
   );
-  
+
   getIt.registerSingleton<LogoutUseCase>(
-    LogoutUseCase(repository: getIt<AuthRepository>())
+    LogoutUseCase(repository: getIt<AuthRepository>()),
   );
-  
+
   getIt.registerFactory<AuthProvider>(
     () => AuthProvider(
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       logoutUseCase: getIt<LogoutUseCase>(),
       authRepository: getIt<AuthRepository>(),
-    )
+    ),
   );
-  
+
   // Bookings Feature
   getIt.registerSingleton<BookingDataSource>(
     // For debugging purposes, you can use the mock implementation
     // MockBookingDataSource()
-    BookingDataSourceImpl(dioClient: getIt<DioClient>())
+    BookingDataSourceImpl(dioClient: getIt<DioClient>()),
   );
-  
+
   getIt.registerSingleton<BookingRepository>(
     BookingRepositoryImpl(
       dataSource: getIt<BookingDataSource>(),
       networkInfo: getIt<NetworkInfo>(),
-    )
+    ),
   );
-  
+
   getIt.registerSingleton<GetUserBookingsUseCase>(
-    GetUserBookingsUseCase(repository: getIt<BookingRepository>())
+    GetUserBookingsUseCase(repository: getIt<BookingRepository>()),
   );
-  
+
   getIt.registerSingleton<GetBookingDetailsUseCase>(
-    GetBookingDetailsUseCase(repository: getIt<BookingRepository>())
+    GetBookingDetailsUseCase(repository: getIt<BookingRepository>()),
   );
-  
+
   getIt.registerSingleton<CreateBookingUseCase>(
-    CreateBookingUseCase(repository: getIt<BookingRepository>())
+    CreateBookingUseCase(repository: getIt<BookingRepository>()),
   );
-  
+
   getIt.registerSingleton<CancelBookingUseCase>(
-    CancelBookingUseCase(repository: getIt<BookingRepository>())
+    CancelBookingUseCase(repository: getIt<BookingRepository>()),
   );
-  
+
   getIt.registerFactory<BookingProvider>(
     () => BookingProvider(
       getBookingDetailsUseCase: getIt<GetBookingDetailsUseCase>(),
       getUserBookingsUseCase: getIt<GetUserBookingsUseCase>(),
       createBookingUseCase: getIt<CreateBookingUseCase>(),
       cancelBookingUseCase: getIt<CancelBookingUseCase>(),
-    )
+    ),
   );
-  
+
   // Routes Feature
   getIt.registerSingleton<RouteDataSource>(
-    RouteDataSourceImpl(dioClient: getIt<DioClient>())
+    RouteDataSourceImpl(dioClient: getIt<DioClient>()),
   );
-  
+
   getIt.registerSingleton<RouteRepository>(
     RouteRepositoryImpl(
       dataSource: getIt<RouteDataSource>(),
       networkInfo: getIt<NetworkInfo>(),
-    )
+    ),
   );
-  
+
   getIt.registerSingleton<GetAllRoutesUseCase>(
-    GetAllRoutesUseCase(repository: getIt<RouteRepository>())
+    GetAllRoutesUseCase(repository: getIt<RouteRepository>()),
   );
-  
+
   getIt.registerSingleton<GetRouteStopsUseCase>(
-    GetRouteStopsUseCase(repository: getIt<RouteRepository>())
+    GetRouteStopsUseCase(repository: getIt<RouteRepository>()),
   );
-  
+
   getIt.registerFactory<RouteProvider>(
     () => RouteProvider(
       getAllRoutesUseCase: getIt<GetAllRoutesUseCase>(),
       getRouteStopsUseCase: getIt<GetRouteStopsUseCase>(),
-    )
+    ),
   );
-  
+
   // Payments Feature
   getIt.registerSingleton<PaymentDataSource>(
-    PaymentDataSourceImpl(dioClient: getIt<DioClient>())
+    PaymentDataSourceImpl(dioClient: getIt<DioClient>()),
   );
-  
+
   getIt.registerSingleton<PaymentRepository>(
     PaymentRepositoryImpl(
       dataSource: getIt<PaymentDataSource>(),
       networkInfo: getIt<NetworkInfo>(),
-    )
+    ),
   );
-  
+
   getIt.registerSingleton<ProcessPaymentUseCase>(
-    ProcessPaymentUseCase(repository: getIt<PaymentRepository>())
+    ProcessPaymentUseCase(repository: getIt<PaymentRepository>()),
   );
-  
+
   getIt.registerSingleton<GetPaymentHistoryUseCase>(
-    GetPaymentHistoryUseCase(repository: getIt<PaymentRepository>())
+    GetPaymentHistoryUseCase(repository: getIt<PaymentRepository>()),
   );
-  
+
   getIt.registerFactory<PaymentProvider>(
     () => PaymentProvider(
       processPaymentUseCase: getIt<ProcessPaymentUseCase>(),
       getPaymentHistoryUseCase: getIt<GetPaymentHistoryUseCase>(),
-    )
+    ),
   );
 
   // Trip module registration
-getIt.registerSingleton<TripDataSource>(
-  TripDataSourceImpl(dioClient: getIt<DioClient>())
-);
+  getIt.registerSingleton<TripDataSource>(
+    TripDataSourceImpl(dioClient: getIt<DioClient>()),
+  );
 
-getIt.registerSingleton<TripRepository>(
-  TripRepositoryImpl(
-    dataSource: getIt<TripDataSource>(),
-    networkInfo: getIt<NetworkInfo>(),
-  )
-);
+  getIt.registerSingleton<TripRepository>(
+    TripRepositoryImpl(
+      dataSource: getIt<TripDataSource>(),
+      networkInfo: getIt<NetworkInfo>(),
+    ),
+  );
 
-getIt.registerSingleton<GetUpcomingTripsUseCase>(
-  GetUpcomingTripsUseCase(repository: getIt<TripRepository>())
-);
+  getIt.registerSingleton<GetUpcomingTripsUseCase>(
+    GetUpcomingTripsUseCase(repository: getIt<TripRepository>()),
+  );
 
-getIt.registerSingleton<GetTripDetailsUseCase>(
-  GetTripDetailsUseCase(repository: getIt<TripRepository>())
-);
+  getIt.registerSingleton<GetTripDetailsUseCase>(
+    GetTripDetailsUseCase(repository: getIt<TripRepository>()),
+  );
 
-getIt.registerFactory<TripProvider>(
-  () => TripProvider(
-    getUpcomingTripsUseCase: getIt<GetUpcomingTripsUseCase>(),
-    getTripDetailsUseCase: getIt<GetTripDetailsUseCase>(),
-  )
-);
+  getIt.registerFactory<TripProvider>(
+    () => TripProvider(
+      getUpcomingTripsUseCase: getIt<GetUpcomingTripsUseCase>(),
+      getTripDetailsUseCase: getIt<GetTripDetailsUseCase>(),
+    ),
+  );
+  
+  // Profile Feature Dependencies
+  getIt.registerSingleton<ProfileDataSource>(
+    ProfileDataSourceImpl(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerSingleton<ProfileRepository>(
+    ProfileRepositoryImpl(
+      dataSource: getIt<ProfileDataSource>(),
+      networkInfo: getIt<NetworkInfo>(),
+    ),
+  );
+
+  getIt.registerFactory<ProfileProvider>(
+    () => ProfileProvider(repository: getIt<ProfileRepository>()),
+  );
 }
