@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
 import '../../../../core/utils/extensions.dart';
-import '../../../payments/presentation/pages/payment_page.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../payments/presentation/providers/payment_provider.dart';
 
@@ -225,8 +224,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
 
     if (mounted) {
       if (success) {
-        print('✅ Payment processed successfully');
-
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -236,14 +233,12 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
           ),
         );
 
-        // Navigate to HomePage with bookings tab
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => HomePage()),
           (route) => false, // Clear navigation stack
         );
 
-        // Switch to bookings tab
         WidgetsBinding.instance.addPostFrameCallback((_) {
           HomePage.navigateToTab(3); // Bookings tab index
         });
