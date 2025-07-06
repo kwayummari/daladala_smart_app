@@ -98,7 +98,7 @@ class _TripsPageState extends State<TripsPage>
 
                 final trips = tripProvider.upcomingTrips;
 
-                if (trips == null || trips.isEmpty) {
+                if (trips.isEmpty) {
                   return EmptyState(
                     title: 'No Trips Found',
                     message: 'You don\'t have any $_selectedFilter trips.',

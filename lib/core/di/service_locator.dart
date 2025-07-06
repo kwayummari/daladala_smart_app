@@ -1,7 +1,6 @@
 import 'package:daladala_smart_app/core/network/api_client.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/cancel_booking_usecase.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/get_booking_details_usecase.dart';
-import 'package:daladala_smart_app/features/payments/domain/usescases/get_wallet_balance_usecase.dart';
 import 'package:daladala_smart_app/features/profile/data/datasources/profile_datasource.dart';
 import 'package:daladala_smart_app/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:daladala_smart_app/features/profile/domain/repositories/profile_repository.dart';

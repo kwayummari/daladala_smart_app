@@ -37,10 +37,6 @@ class _HomePageState extends State<HomePage> {
   final PageController _pageController = PageController();
 
   GoogleMapController? _mapController;
-  final CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
-    zoom: 14.0,
-  );
 
   final List<Widget> _pages = [
     const _HomeContent(),
@@ -71,8 +67,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final user = auth.currentUser;
+    Provider.of<AuthProvider>(context);
 
     return Scaffold(
       body: PageView(
@@ -164,8 +159,7 @@ class _HomeContentState extends State<_HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final user = auth.currentUser;
+    Provider.of<AuthProvider>(context);
 
     return Scaffold(
       body: SafeArea(

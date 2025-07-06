@@ -155,7 +155,7 @@ class _PaymentItem extends StatelessWidget {
   final Payment payment;
   final VoidCallback onTap;
 
-  const _PaymentItem({super.key, required this.payment, required this.onTap});
+  const _PaymentItem({required this.payment, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -226,17 +226,17 @@ class PaymentProvider extends ChangeNotifier {
   String _getFailureMessage(Failure failure) {
     switch (failure.runtimeType) {
       case ServerFailure _:
-        return failure.message ?? 'Server error occurred';
+        return failure.message;
       case NetworkFailure _:
         return 'No internet connection';
       case AuthenticationFailure _:
         return 'Authentication failed. Please login again';
       case InputFailure _:
-        return failure.message ?? 'Invalid input provided';
+        return failure.message;
       case NotFoundFailure _:
         return 'Payment not found';
       default:
-        return failure.message ?? 'An unexpected error occurred';
+        return failure.message;
     }
   }
 

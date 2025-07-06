@@ -1,7 +1,5 @@
-// lib/features/trips/data/models/trip_model.dart
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../domains/entities/trip.dart';
-import '../../../routes/domain/entities/transport_route.dart';
 import '../../../routes/data/models/route_model.dart';
 
 class TripModel extends Trip {

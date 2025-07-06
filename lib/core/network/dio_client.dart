@@ -180,12 +180,7 @@ class DioClient {
         throw const NoInternetConnectionException(
           message: 'Connection error. Please check your network settings.',
         );
-      default:
-        throw FetchDataException(
-          message:
-              error.error?.toString() ?? 'Error occurred during communication',
-        );
-    }
+      }
   }
 
   String? _extractErrorMessage(dynamic data) {

@@ -164,13 +164,6 @@ class _HomeNearbyStopsState extends State<HomeNearbyStops> {
     }
   }
 
-  String _formatDistance(double distanceInMeters) {
-    if (distanceInMeters < 1000) {
-      return '${distanceInMeters.round()}m';
-    } else {
-      return '${(distanceInMeters / 1000).toStringAsFixed(1)}km';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

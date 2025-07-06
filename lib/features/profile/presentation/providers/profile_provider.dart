@@ -1,10 +1,6 @@
-// lib/features/profile/presentation/providers/profile_provider.dart
-import 'dart:io';
-import 'package:daladala_smart_app/features/profile/domain/repositories/profile_repository.dart';
 import 'package:flutter/foundation.dart';
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
 import '../../../auth/domain/entities/user.dart';
+import '../../domain/repositories/profile_repository.dart';
 
 class ProfileProvider extends ChangeNotifier {
   final ProfileRepository repository;
@@ -20,7 +16,7 @@ class ProfileProvider extends ChangeNotifier {
   User? _currentProfile;
   User? get currentProfile => _currentProfile;
 
-  // ADD this missing getProfile method
+  // Simple getProfile method that just clears loading state
   Future<void> getProfile() async {
     _isLoading = true;
     _errorMessage = null;
@@ -29,6 +25,7 @@ class ProfileProvider extends ChangeNotifier {
     try {
       // For now, we'll just clear the loading state
       // since you're getting profile from AuthProvider
+      await Future.delayed(const Duration(milliseconds: 100));
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -38,33 +35,39 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<Either<Failure, User>> updateProfile(
-    Map<String, dynamic> profileData, {
-    File? profileImage,
-  }) async {
+  // Update profile method - returns bool for simplicity
+  Future<bool> updateProfile(Map<String, dynamic> profileData) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    final result = await repository.updateProfile(
-      profileData,
-      profileImage: profileImage,
-    );
+    try {
+      final result = await repository.updateProfile(
+        profileData,
+        profileImage: null, // Handle image separately if needed
+      );
 
-    result.fold(
-      (failure) {
-        _errorMessage = failure.message;
-      },
-      (user) {
-        _currentProfile = user;
-        _errorMessage = null;
-      },
-    );
-
-    _isLoading = false;
-    notifyListeners();
-
-    return result;
+      return result.fold(
+        (failure) {
+          _errorMessage = failure.message;
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        },
+        (user) {
+          _currentProfile = user;
+          _errorMessage = null;
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        },
+      );
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   void clearError() {

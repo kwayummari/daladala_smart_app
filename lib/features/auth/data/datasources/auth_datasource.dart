@@ -1,8 +1,6 @@
-// lib/features/auth/data/datasources/auth_datasource.dart
 import 'package:daladala_smart_app/core/error/exceptions.dart';
 import 'package:daladala_smart_app/core/error/failures.dart';
 import 'package:daladala_smart_app/core/network/api_client.dart';
-import 'package:daladala_smart_app/features/auth/domain/entities/user.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/utils/constants.dart';
@@ -174,21 +172,49 @@ class AuthDataSourceImpl implements AuthDataSource {
   }
 
   @override
-  Future<UserModel?> getCurrentUser() async {
+  Future<UserModel> getCurrentUser() async {
     try {
-      final token = await apiClient.getAuthToken();
-      if (token == null) return null;
-
-      final response = await apiClient.dio.get(
-        '${AppConstants.userEndpoint}/profile',
-      );
+      final response = await apiClient.dio.get('/users/current');
 
       if (response.statusCode == 200 && response.data['status'] == 'success') {
-        return UserModel.fromJson(response.data['data']['user']);
+        final userData = response.data['data'];
+
+        return UserModel(
+          id: userData['id'].toString(),
+          firstName: userData['first_name'] ?? '',
+          lastName: userData['last_name'] ?? '',
+          phone: userData['phone'],
+          email: userData['email'],
+          profilePicture: userData['profile_picture'],
+          role: userData['role'] ?? 'passenger',
+          isVerified: userData['is_verified'] ?? false,
+          // Don't include accessToken in getCurrentUser response
+        );
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: response.data['message'] ?? 'Failed to get current user',
+        );
       }
-      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw DioException(
+          requestOptions: e.requestOptions,
+          response: e.response,
+          message: 'Authentication required',
+        );
+      }
+      throw DioException(
+        requestOptions: e.requestOptions,
+        response: e.response,
+        message: e.response?.data['message'] ?? 'Failed to get current user',
+      );
     } catch (e) {
-      return null;
+      throw DioException(
+        requestOptions: RequestOptions(path: '/users/current'),
+        message: 'Network error. Please try again.',
+      );
     }
   }
 

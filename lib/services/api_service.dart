@@ -518,23 +518,6 @@ class ApiService {
     }
   }
 
-  // Helper method to handle API errors
-  Map<String, dynamic> _handleApiError(http.Response response) {
-    try {
-      final errorData = json.decode(response.body);
-      return {
-        'status': 'error',
-        'message': errorData['message'] ?? 'Unknown error occurred',
-        'status_code': response.statusCode,
-      };
-    } catch (e) {
-      return {
-        'status': 'error',
-        'message': 'Failed to parse error response',
-        'status_code': response.statusCode,
-      };
-    }
-  }
 
   // Auth related methods (if needed)
   Future<Map<String, dynamic>> refreshToken() async {

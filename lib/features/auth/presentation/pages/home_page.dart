@@ -14,7 +14,6 @@ import '../../../trips/presentation/providers/trip_provider.dart';
 import '../../../routes/presentation/providers/route_provider.dart';
 
 class HomePage extends StatefulWidget {
-  // Add a global key to access the state from other widgets
   static final GlobalKey<_HomePageState> homeKey = GlobalKey<_HomePageState>();
 
   // Updated constructor to use the global key
@@ -98,8 +97,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.currentUser;
+    context.watch<AuthProvider>();
 
     return Scaffold(
       body: PageView(
@@ -176,7 +174,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                   Text(
                     user?.firstName != null
-                        ? '${user!.firstName} ${user.lastName ?? ''}'.trim()
+                        ? '${user!.firstName} ${user.lastName}'.trim()
                         : 'Traveler',
                     style: const TextStyle(
                       fontSize: 20,

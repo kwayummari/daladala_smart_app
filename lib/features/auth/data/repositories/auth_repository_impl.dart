@@ -229,21 +229,43 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(NetworkFailure(message: 'No internet connection'));
     }
   }
+
   @override
   Future<Either<Failure, User>> getCurrentUser() async {
     if (await networkInfo.isConnected) {
       try {
+        // Call the backend getCurrentUser endpoint
         final userModel = await dataSource.getCurrentUser();
-        if (userModel != null) {
-          return Right(userModel);
-        } else {
-          return Left(AuthenticationFailure(message: 'User not found'));
-        }
+
+        // Save updated user data locally
+        await localStorage.saveObject(
+          AppConstants.keyAuthUser,
+          userModel!.toJson(),
+        );
+
+        return Right(userModel);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message ?? 'Server error'));
+      } on UnauthorizedException catch (e) {
+        return Left(
+          AuthenticationFailure(message: e.message ?? 'Authentication error'),
+        );
       } catch (e) {
         return Left(ServerFailure(message: e.toString()));
       }
     } else {
-      return Left(NetworkFailure(message: 'No internet connection'));
+      // If no network, try to get from local storage
+      try {
+        final userData = await localStorage.getObject(AppConstants.keyAuthUser);
+        if (userData == null) {
+          return Left(AuthenticationFailure(message: 'User data not found'));
+        }
+
+        final userModel = UserModel.fromJson(userData);
+        return Right(userModel);
+      } catch (e) {
+        return Left(AuthenticationFailure(message: e.toString()));
+      }
     }
   }
 }

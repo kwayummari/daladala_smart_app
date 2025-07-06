@@ -39,55 +39,142 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
   Future<void> _initializeData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    final profileProvider = Provider.of<ProfileProvider>(
+      context,
+      listen: false,
+    );
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
 
-    if (authProvider.currentUser != null) {
-      setState(() {
-        user = authProvider.currentUser;
-        isLoading = false;
-      });
-      _populateFields();
-      
-      // Load additional profile data
-      await profileProvider.getProfile();
-      
-      // Load wallet data
-      try {
-        await walletProvider.getWalletBalance();
-      } catch (e) {
-        print('Error loading wallet data: $e');
-      }
-    } else {
-      // If no current user, try to refresh from storage
-      setState(() => isLoading = true);
-      try {
+    setState(() => isLoading = true);
+
+    try {
+      // First, ensure we have current user data
+      if (authProvider.currentUser == null) {
         await authProvider.refreshCurrentUser();
+      }
+
+      if (authProvider.currentUser != null) {
+        setState(() {
+          user = authProvider.currentUser;
+        });
+
+        // 🔥 FIX: Always populate fields from current user
+        _populateFields();
+
+        // Load additional profile data from API
+        await profileProvider.getProfile();
+
+        // Load wallet data
+        await walletProvider.getWalletBalance();
+      } else {
+        // No user found, redirect to login
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      print('Profile initialization error: $e');
+      setState(() {
+        errorMessage = 'Failed to load profile. Please try again.';
+      });
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  // 🔥 FIX: Improved field population
+  void _populateFields() {
+    if (user != null) {
+      _firstNameController.text = user!.firstName;
+      _lastNameController.text = user!.lastName;
+      _emailController.text = user!.email ?? '';
+
+      // Debug: Print values to check
+      print('Populating fields:');
+      print('FirstName: "${user!.firstName}"');
+      print('LastName: "${user!.lastName}"');
+      print('Email: "${user!.email}"');
+    }
+  }
+
+  // 🔥 FIX: Improved profile update
+  Future<void> _updateProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      isSaving = true;
+      errorMessage = null;
+      successMessage = null;
+    });
+
+    try {
+      final profileProvider = Provider.of<ProfileProvider>(
+        context,
+        listen: false,
+      );
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // Create update data map
+      final updateData = {
+        'first_name': _firstNameController.text.trim(),
+        'last_name': _lastNameController.text.trim(),
+        'email': _emailController.text.trim(),
+      };
+
+      print('Updating profile with: $updateData');
+
+      // Update profile
+      final success = await profileProvider.updateProfile(updateData);
+
+      if (success) {
+        // 🔥 FIX: Force refresh user data from backend
+        await authProvider.refreshCurrentUser();
+
+        // Update local user state
         if (authProvider.currentUser != null) {
           setState(() {
             user = authProvider.currentUser;
-            isLoading = false;
+            isEditing = false;
+            successMessage = 'Profile updated successfully!';
           });
+
+          // Re-populate fields with fresh data
           _populateFields();
-          await profileProvider.getProfile();
-          await walletProvider.getWalletBalance();
-        } else {
-          // No user found, redirect to login
-          if (mounted) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-              (route) => false,
-            );
-          }
+
+          // Clear success message after 3 seconds
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() => successMessage = null);
+            }
+          });
         }
-      } catch (e) {
+      } else {
         setState(() {
-          isLoading = false;
-          errorMessage = 'Failed to load profile. Please login again.';
+          errorMessage =
+              profileProvider.errorMessage ?? 'Failed to update profile';
         });
       }
+    } catch (e) {
+      print('Profile update error: $e');
+      setState(() {
+        errorMessage = 'Failed to update profile. Please try again.';
+      });
+    } finally {
+      setState(() => isSaving = false);
     }
   }
 
@@ -151,75 +238,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  void _populateFields() {
-    if (user != null) {
-      _firstNameController.text = user!.firstName ?? '';
-      _lastNameController.text = user!.lastName ?? '';
-      _emailController.text = user!.email ?? '';
-    }
-  }
-
-  Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      setState(() {
-        isSaving = true;
-        errorMessage = null;
-        successMessage = null;
-      });
-
-      final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
-      
-      // Create update data map
-      final updateData = {
-        'first_name': _firstNameController.text.trim(),
-        'last_name': _lastNameController.text.trim(),
-        'email': _emailController.text.trim(),
-      };
-
-      // Update profile using clean architecture
-      await profileProvider.updateProfile(updateData);
-
-      if (profileProvider.errorMessage == null) {
-        // Refresh AuthProvider from API
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        await authProvider.refreshCurrentUser();
-
-        // Update local user from refreshed AuthProvider
-        setState(() {
-          user = authProvider.currentUser;
-          isEditing = false;
-          successMessage = 'Profile updated successfully!';
-          _selectedImage = null;
-        });
-
-        // Clear success message after 3 seconds
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() => successMessage = null);
-          }
-        });
-      } else {
-        throw Exception(profileProvider.errorMessage);
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = 'Failed to update profile. Please try again.';
-      });
-      print('Profile update error: $e');
-    } finally {
-      setState(() => isSaving = false);
-    }
-  }
 
   Future<void> _pickImage() async {
     try {
@@ -417,11 +435,11 @@ class _ProfilePageState extends State<ProfilePage> {
       height: 120,
       color: Colors.grey[300],
       child: user != null &&
-              (user!.firstName?.isNotEmpty ?? false) &&
-              (user!.lastName?.isNotEmpty ?? false)
+              (user!.firstName.isNotEmpty) &&
+              (user!.lastName.isNotEmpty)
           ? Center(
               child: Text(
-                '${user!.firstName![0]}${user!.lastName![0]}'.toUpperCase(),
+                '${user!.firstName[0]}${user!.lastName[0]}'.toUpperCase(),
                 style: TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.bold,
@@ -967,13 +985,13 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildInfoRow(
               Icons.calendar_today,
               'Member Since',
-              _formatDate(user?.createdAt?.toString()) ?? 'Unknown',
+              _formatDate(user?.createdAt?.toString()),
             ),
             const SizedBox(height: 12),
             _buildInfoRow(
               Icons.access_time,
               'Last Login',
-              _formatDate(user?.lastLogin?.toString()) ?? 'Never',
+              _formatDate(user?.lastLogin?.toString()),
             ),
           ],
         ),
