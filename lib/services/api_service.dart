@@ -1,24 +1,23 @@
-// lib/services/api_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../core/utils/constants.dart';
 
 class ApiService {
-  static const String baseUrl =
-      'http://localhost:3000/api'; // Replace with your actual API URL
+  static final String baseUrl =
+      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
 
   Future<String?> _getAuthToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    const FlutterSecureStorage storage = FlutterSecureStorage();
+    return await storage.read(key: 'auth_token');
   }
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _getAuthToken();
     return {
       'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
+      if (token != null) 'x-access-token': token,
     };
   }
 

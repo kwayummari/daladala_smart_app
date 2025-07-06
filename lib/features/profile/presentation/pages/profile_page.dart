@@ -1,8 +1,11 @@
 // lib/screens/profile/profile_page.dart
+import 'package:daladala_smart_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:daladala_smart_app/features/auth/domain/entities/user.dart';
 import 'package:daladala_smart_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -29,7 +32,16 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        setState(() {
+          user = authProvider.currentUser;
+          isLoading = false;
+        });
+        _populateFields();
+      }
+    });
   }
 
   @override
@@ -40,40 +52,10 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
-    try {
-      print("========== Profile data Loading ===========");
-      setState(() {
-        isLoading = true;
-        errorMessage = null;
-      });
-
-      final response = await _apiService.getProfile();
-
-      print("Profile data=========== ${response}");
-
-      if (response['status'] == 'success') {
-        setState(() {
-          user = User.fromJson(response['data']);
-          _populateFields();
-          isLoading = false;
-        });
-      } else {
-        throw Exception(response['message'] ?? 'Failed to load profile');
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load profile. Please try again.';
-      });
-      print('Profile load error: $e');
-    }
-  }
-
   void _populateFields() {
     if (user != null) {
-      _firstNameController.text = user!.firstName ?? '';
-      _lastNameController.text = user!.lastName ?? '';
+      _firstNameController.text = user!.firstName;
+      _lastNameController.text = user!.lastName;
       _emailController.text = user!.email ?? '';
     }
   }
@@ -105,11 +87,29 @@ class _ProfilePageState extends State<ProfilePage> {
       final response = await _apiService.updateProfile(updateData);
 
       if (response['status'] == 'success') {
+        // Update both local user and AuthProvider
+        final updatedUser = User(
+          id: user!.id,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          phone: user!.phone,
+          email: _emailController.text.trim(),
+          profilePicture: updateData['profile_picture'] ?? user!.profilePicture,
+          role: user!.role,
+          isVerified: user!.isVerified,
+          createdAt: user!.createdAt,
+          lastLogin: user!.lastLogin,
+        );
+
         setState(() {
-          user = User.fromJson(response['data']);
+          user = updatedUser;
           isEditing = false;
           successMessage = 'Profile updated successfully!';
         });
+
+        // Update AuthProvider
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        authProvider.updateCurrentUser(updatedUser);
 
         // Clear success message after 3 seconds
         Future.delayed(const Duration(seconds: 3), () {
@@ -163,6 +163,19 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final currentUser = authProvider.currentUser;
+
+    if (currentUser == null) {
+      return const Scaffold(body: Center(child: Text('Please log in')));
+    }
+
+    // Sync with AuthProvider if user is null
+    if (user == null && currentUser != null) {
+      user = currentUser;
+      _populateFields();
+    }
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -290,7 +303,21 @@ class _ProfilePageState extends State<ProfilePage> {
       width: 120,
       height: 120,
       color: Colors.grey[300],
-      child: Icon(Icons.person, size: 60, color: Colors.grey[600]),
+      child:
+          user != null &&
+                  user!.firstName.isNotEmpty &&
+                  user!.lastName.isNotEmpty
+              ? Center(
+                child: Text(
+                  '${user!.firstName[0]}${user!.lastName[0]}'.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              )
+              : Icon(Icons.person, size: 60, color: Colors.grey[600]),
     );
   }
 
@@ -325,7 +352,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const Icon(Icons.shield, color: Colors.white, size: 16),
               const SizedBox(width: 4),
               Text(
-                user?.role?.roleName.toUpperCase() ?? 'PASSENGER',
+                user?.role.toUpperCase() ?? 'PASSENGER',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -340,9 +367,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildLoadingState() {
-    return SizedBox(
+    return const SizedBox(
       height: 400,
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -435,10 +462,15 @@ class _ProfilePageState extends State<ProfilePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Personal Information',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  if (!isEditing)
+                    const Text(
+                      'Personal Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  if (!isEditing) const Spacer(),
                   if (isEditing)
                     Row(
                       children: [
@@ -560,13 +592,13 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildInfoRow(
               Icons.calendar_today,
               'Member Since',
-              _formatDate(user?.createdAt).toString(),
+              _formatDate(user?.createdAt?.toString()) ?? 'Unknown',
             ),
             const SizedBox(height: 12),
             _buildInfoRow(
               Icons.access_time,
               'Last Login',
-              _formatDate(user?.lastLogin) ?? 'Never',
+              _formatDate(user?.lastLogin?.toString()) ?? 'Never',
             ),
           ],
         ),
@@ -604,85 +636,5 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       return dateString;
     }
-  }
-}
-
-// lib/models/user_model.dart
-class User {
-  final int userId;
-  final String? firstName;
-  final String? lastName;
-  final String? email;
-  final String phone;
-  final String? profilePicture;
-  final bool isVerified;
-  final String? lastLogin;
-  final String status;
-  final String createdAt;
-  final String updatedAt;
-  final UserRole? role;
-
-  User({
-    required this.userId,
-    this.firstName,
-    this.lastName,
-    this.email,
-    required this.phone,
-    this.profilePicture,
-    required this.isVerified,
-    this.lastLogin,
-    required this.status,
-    required this.createdAt,
-    required this.updatedAt,
-    this.role,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      userId: json['user_id'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      email: json['email'],
-      phone: json['phone'],
-      profilePicture: json['profile_picture'],
-      isVerified: json['is_verified'] ?? false,
-      lastLogin: json['last_login'],
-      status: json['status'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      role: json['role'] != null ? UserRole.fromJson(json['role']) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'user_id': userId,
-      'first_name': firstName,
-      'last_name': lastName,
-      'email': email,
-      'phone': phone,
-      'profile_picture': profilePicture,
-      'is_verified': isVerified,
-      'last_login': lastLogin,
-      'status': status,
-      'created_at': createdAt,
-      'updated_at': updatedAt,
-      'role': role?.toJson(),
-    };
-  }
-}
-
-class UserRole {
-  final int roleId;
-  final String roleName;
-
-  UserRole({required this.roleId, required this.roleName});
-
-  factory UserRole.fromJson(Map<String, dynamic> json) {
-    return UserRole(roleId: json['role_id'], roleName: json['role_name']);
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'role_id': roleId, 'role_name': roleName};
   }
 }
