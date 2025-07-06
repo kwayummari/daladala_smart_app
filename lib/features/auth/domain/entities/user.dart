@@ -53,4 +53,40 @@ class User extends Equatable {
     createdAt,
     lastLogin,
   ];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'first_name': firstName,
+      'last_name': lastName,
+      'phone': phone,
+      'email': email,
+      'profile_picture': profilePicture,
+      'role': role,
+      'is_verified': isVerified,
+      'created_at': createdAt?.toIso8601String(),
+      'last_login': lastLogin?.toIso8601String(),
+    };
+  }
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id']?.toString() ?? '',
+      firstName: json['first_name'] ?? '',
+      lastName: json['last_name'] ?? '',
+      phone: json['phone'] ?? '',
+      email: json['email'],
+      profilePicture: json['profile_picture'],
+      role: json['role'] ?? 'passenger',
+      isVerified: json['is_verified'] ?? false,
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.tryParse(json['created_at'])
+              : null,
+      lastLogin:
+          json['last_login'] != null
+              ? DateTime.tryParse(json['last_login'])
+              : null,
+    );
+  }
 }

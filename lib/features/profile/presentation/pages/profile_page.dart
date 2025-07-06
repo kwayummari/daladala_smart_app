@@ -1,6 +1,7 @@
 // lib/screens/profile/profile_page.dart
 import 'package:daladala_smart_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:daladala_smart_app/features/auth/domain/entities/user.dart';
+import 'package:daladala_smart_app/features/splash/presentation/pages/login_page.dart';
 import 'package:daladala_smart_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -42,6 +43,70 @@ class _ProfilePageState extends State<ProfilePage> {
         _populateFields();
       }
     });
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.red.shade600),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final result = await authProvider.logout();
+
+      if (mounted) {
+        result.fold(
+          (failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(failure.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+          (_) {
+            // ✅ Use your actual login page import
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder:
+                    (_) =>
+                        const LoginPage(), // Replace with your actual LoginPage
+              ),
+              (route) => false,
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -87,29 +152,17 @@ class _ProfilePageState extends State<ProfilePage> {
       final response = await _apiService.updateProfile(updateData);
 
       if (response['status'] == 'success') {
-        // Update both local user and AuthProvider
-        final updatedUser = User(
-          id: user!.id,
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          phone: user!.phone,
-          email: _emailController.text.trim(),
-          profilePicture: updateData['profile_picture'] ?? user!.profilePicture,
-          role: user!.role,
-          isVerified: user!.isVerified,
-          createdAt: user!.createdAt,
-          lastLogin: user!.lastLogin,
-        );
+        // ✅ REFRESH AuthProvider from API
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshCurrentUser();
 
+        // ✅ UPDATE local user from refreshed AuthProvider
         setState(() {
-          user = updatedUser;
+          user = authProvider.currentUser;
           isEditing = false;
           successMessage = 'Profile updated successfully!';
+          _selectedImage = null; // Clear selected image
         });
-
-        // Update AuthProvider
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        authProvider.updateCurrentUser(updatedUser);
 
         // Clear success message after 3 seconds
         Future.delayed(const Duration(seconds: 3), () {
@@ -392,8 +445,52 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 16),
           _buildProfileForm(),
           const SizedBox(height: 24),
-          if (!isEditing) _buildProfileStats(),
+          if (!isEditing) _buildLogoutSection(), // CHANGE THIS LINE
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Account Actions',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout, color: Colors.white),
+                label: const Text(
+                  'Logout',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

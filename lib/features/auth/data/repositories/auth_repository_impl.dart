@@ -246,5 +246,4 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(NetworkFailure(message: 'No internet connection'));
     }
   }
-  
 }

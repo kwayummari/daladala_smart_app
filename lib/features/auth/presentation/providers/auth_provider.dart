@@ -1,3 +1,5 @@
+import 'package:daladala_smart_app/core/di/service_locator.dart';
+import 'package:daladala_smart_app/core/storage/local_storage.dart';
 import 'package:daladala_smart_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
@@ -171,29 +173,39 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  // Add this method to refresh user from server
+
   Future<void> refreshCurrentUser() async {
     if (_currentUser != null) {
       try {
         _isLoading = true;
         notifyListeners();
-        
+
         final result = await authRepository.getCurrentUser();
         result.fold(
           (failure) {
-            // Handle failure silently or show error if needed
-            print('Failed to refresh user: ${failure.message}');
+            // print('Failed to refresh user: ${failure.message}');
           },
           (user) {
             _currentUser = user;
+            _saveUserToLocal(user);
           },
         );
       } catch (e) {
-        print('Error refreshing user: $e');
+        // print('Error refreshing user: $e');
       } finally {
         _isLoading = false;
         notifyListeners();
       }
+    }
+  }
+
+  // Add method to save user to local storage
+  Future<void> _saveUserToLocal(User user) async {
+    try {
+      final localStorage = getIt<LocalStorage>();
+      await localStorage.saveObject('auth_user', user.toJson());
+    } catch (e) {
+      print('Failed to save user to local storage: $e');
     }
   }
 }

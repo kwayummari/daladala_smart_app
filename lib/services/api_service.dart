@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   static final String baseUrl =
@@ -67,11 +68,34 @@ class ApiService {
       );
 
       if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
+        request.headers['x-access-token'] = token; // Use correct header
+      }
+
+      String mimeType = 'image/jpeg'; // Default
+      String extension = imageFile.path.split('.').last.toLowerCase();
+
+      switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+          mimeType = 'image/jpeg';
+          break;
+        case 'png':
+          mimeType = 'image/png';
+          break;
+        case 'gif':
+          mimeType = 'image/gif';
+          break;
+        case 'webp':
+          mimeType = 'image/webp';
+          break;
       }
 
       request.files.add(
-        await http.MultipartFile.fromPath('avatar', imageFile.path),
+        await http.MultipartFile.fromPath(
+          'avatar',
+          imageFile.path,
+          contentType: MediaType.parse(mimeType), // ADD THIS
+        ),
       );
 
       final response = await request.send();
