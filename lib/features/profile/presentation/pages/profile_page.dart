@@ -181,23 +181,24 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.red.shade600),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Logout',
-              style: TextStyle(color: Colors.red.shade600),
-            ),
-          ),
-        ],
-      ),
     );
 
     if (confirm != true) return;
@@ -218,9 +219,7 @@ class _ProfilePageState extends State<ProfilePage> {
           },
           (_) {
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (_) => const LoginPage(),
-              ),
+              MaterialPageRoute(builder: (_) => const LoginPage()),
               (route) => false,
             );
           },
@@ -238,7 +237,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-
   Future<void> _pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -255,9 +253,9 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
     }
   }
 
@@ -310,7 +308,10 @@ class _ProfilePageState extends State<ProfilePage> {
             slivers: [
               _buildAppBar(),
               SliverToBoxAdapter(
-                child: isLoading ? _buildLoadingState() : _buildContent(walletProvider),
+                child:
+                    isLoading
+                        ? _buildLoadingState()
+                        : _buildContent(walletProvider),
               ),
             ],
           ),
@@ -434,20 +435,21 @@ class _ProfilePageState extends State<ProfilePage> {
       width: 120,
       height: 120,
       color: Colors.grey[300],
-      child: user != null &&
-              (user!.firstName.isNotEmpty) &&
-              (user!.lastName.isNotEmpty)
-          ? Center(
-              child: Text(
-                '${user!.firstName[0]}${user!.lastName[0]}'.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
+      child:
+          user != null &&
+                  (user!.firstName.isNotEmpty) &&
+                  (user!.lastName.isNotEmpty)
+              ? Center(
+                child: Text(
+                  '${user!.firstName[0]}${user!.lastName[0]}'.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
                 ),
-              ),
-            )
-          : Icon(Icons.person, size: 60, color: Colors.grey[600]),
+              )
+              : Icon(Icons.person, size: 60, color: Colors.grey[600]),
     );
   }
 
@@ -522,19 +524,15 @@ class _ProfilePageState extends State<ProfilePage> {
           if (errorMessage != null) _buildErrorMessage(),
           if (successMessage != null) _buildSuccessMessage(),
           const SizedBox(height: 16),
-          
+
           // Wallet Section
           _buildWalletSection(walletProvider),
           const SizedBox(height: 16),
-          
+
           // Profile Form
           _buildProfileForm(),
           const SizedBox(height: 24),
-          
-          // Account Stats
-          _buildProfileStats(),
-          const SizedBox(height: 24),
-          
+
           if (!isEditing) _buildLogoutSection(),
         ],
       ),
@@ -558,10 +556,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 const Text(
                   'Wallet',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
                   onPressed: _navigateToWallet,
@@ -571,7 +566,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             if (isWalletLoading)
               const Center(
                 child: Padding(
@@ -598,10 +593,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     const Text(
                       'Current Balance',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -616,7 +608,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Wallet Status
               Row(
                 children: [
@@ -636,7 +628,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Limits
               if (wallet.dailyLimit != null)
                 _buildWalletInfoRow(
@@ -692,7 +684,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ],
-            
+
             if (walletProvider.error != null) ...[
               Container(
                 width: double.infinity,
@@ -732,19 +724,10 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ],
       ),
@@ -876,15 +859,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: isSaving ? null : _updateProfile,
-                          child: isSaving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Save'),
+                          child:
+                              isSaving
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Text('Save'),
                         ),
                       ],
                     ),
@@ -937,8 +921,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     return 'Email is required';
                   }
                   if (isEditing &&
-                      !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                          .hasMatch(value!)) {
+                      !RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value!)) {
                     return 'Please enter a valid email';
                   }
                   return null;
@@ -959,65 +944,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildProfileStats() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Account Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow(
-              Icons.verified_user,
-              'Account Status',
-              user?.isVerified == true ? 'Verified' : 'Not Verified',
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              Icons.calendar_today,
-              'Member Since',
-              _formatDate(user?.createdAt?.toString()),
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              Icons.access_time,
-              'Last Login',
-              _formatDate(user?.lastLogin?.toString()),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
     );
   }
 
