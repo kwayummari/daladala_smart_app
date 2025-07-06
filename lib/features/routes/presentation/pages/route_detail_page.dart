@@ -1,3 +1,5 @@
+// ignore_for_file: empty_catches
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -22,21 +24,19 @@ class RouteDetailPage extends StatefulWidget {
 class _RouteDetailPageState extends State<RouteDetailPage> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
-  Set<Polyline> _polylines = {};
+  final Set<Polyline> _polylines = {};
   TransportRoute? _currentRoute;
   List<Stop> _routeStops = [];
 
   // Stop selection state
   Stop? _selectedPickupStop;
   Stop? _selectedDropoffStop;
-  bool _isSelectingStops = false;
   bool _isLoading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    print('🔍 RouteDetailPage initialized with routeId: ${widget.routeId}');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRouteDetails();
     });
@@ -55,26 +55,20 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         _error = null;
       });
 
-      print('📡 Loading route details for route ${widget.routeId}');
-
       final routeProvider = Provider.of<RouteProvider>(context, listen: false);
 
-      // Try to find the route in already loaded routes first
       TransportRoute? foundRoute;
       if (routeProvider.routes != null) {
         try {
           foundRoute = routeProvider.routes!.firstWhere(
             (route) => route.id == widget.routeId,
           );
-          print('✅ Found route in cache: ${foundRoute.routeName}');
         } catch (e) {
-          print('⚠️ Route not found in cache, will fetch from API');
+          
         }
       }
 
-      // If route not found in cache, try to load all routes first
       if (foundRoute == null) {
-        print('🔄 Loading all routes first...');
         await routeProvider.getAllRoutes();
 
         if (routeProvider.routes != null) {
@@ -82,11 +76,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
             foundRoute = routeProvider.routes!.firstWhere(
               (route) => route.id == widget.routeId,
             );
-            print('✅ Found route after loading: ${foundRoute.routeName}');
           } catch (e) {
-            print(
-              '❌ Route ${widget.routeId} not found even after loading all routes',
-            );
           }
         }
       }
@@ -96,19 +86,15 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
           _currentRoute = foundRoute;
         });
 
-        // Load route stops
-        print('🏪 Loading stops for route ${widget.routeId}');
         final stopsResult = await routeProvider.getRouteStops(widget.routeId);
 
         stopsResult.fold(
           (failure) {
-            print('❌ Failed to load route stops: ${failure.message}');
             setState(() {
               _error = 'Failed to load route stops: ${failure.message}';
             });
           },
           (stops) {
-            print('✅ Loaded ${stops.length} stops for route');
             setState(() {
               _routeStops = stops;
             });
@@ -121,7 +107,6 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         });
       }
     } catch (e) {
-      print('💥 Error in _loadRouteDetails: $e');
       setState(() {
         _error = 'Failed to load route details: $e';
       });
@@ -162,7 +147,6 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         _fitMarkersOnMap();
       }
     } catch (e) {
-      print('⚠️ Error updating map markers: $e');
     }
   }
 
@@ -188,7 +172,6 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         CameraUpdate.newLatLngBounds(bounds, 100.0),
       );
     } catch (e) {
-      print('⚠️ Error fitting markers on map: $e');
     }
   }
 
@@ -478,15 +461,6 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                 });
                                 _updateMapMarkers(_routeStops);
 
-                                print('🚀 Navigating to trip selection:');
-                                print(
-                                  '   Pickup: ${pickupStop.stopName} (ID: $selectedPickupId)',
-                                );
-                                print(
-                                  '   Dropoff: ${dropoffStop.stopName} (ID: $selectedDropoffId)',
-                                );
-
-                                // Navigate to trip selection
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(

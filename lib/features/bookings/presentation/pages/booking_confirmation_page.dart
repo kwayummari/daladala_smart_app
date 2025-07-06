@@ -1,10 +1,11 @@
 // lib/features/bookings/presentation/pages/booking_confirmation_page.dart
+import 'package:daladala_smart_app/features/bookings/presentation/providers/booking_provider.dart';
+import 'package:daladala_smart_app/features/home/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
-import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../payments/presentation/pages/payment_page.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
@@ -101,7 +102,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
       }
     } catch (e) {
       // Handle wallet loading error
-      print('Failed to load wallet balance: $e');
     }
   }
 
@@ -138,13 +138,11 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
     });
 
     try {
-      // Create booking first
       final response = await _createBooking();
 
       if (response != null && response['status'] == 'success') {
         final bookingId = response['data']['booking_id'];
 
-        // Process payment
         await _processPayment(bookingId);
       } else {
         throw Exception('Failed to create booking');
@@ -168,17 +166,40 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
   }
 
   Future<Map<String, dynamic>?> _createBooking() async {
-    // TODO: Replace with actual API call to create booking
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final bookingProvider = Provider.of<BookingProvider>(
+        context,
+        listen: false,
+      );
 
-    return {
-      'status': 'success',
-      'data': {
-        'booking_id': DateTime.now().millisecondsSinceEpoch,
-        'fare_amount': _totalFare,
-        'passenger_count': _passengerCount,
-      },
-    };
+      final success = await bookingProvider.createBooking(
+        tripId: widget.tripId,
+        pickupStopId: widget.pickupStopId,
+        dropoffStopId: widget.dropoffStopId,
+        passengerCount: _passengerCount,
+      );
+
+      if (success && bookingProvider.currentBooking != null) {
+        final booking = bookingProvider.currentBooking!;
+        return {
+          'status': 'success',
+          'data': {
+            'booking_id': booking.id,
+            'fare_amount': booking.fareAmount,
+            'passenger_count': booking.passengerCount,
+            'trip_id': booking.tripId,
+            'status': booking.status,
+            'payment_status': booking.paymentStatus,
+          },
+        };
+      } else {
+        final errorMessage =
+            bookingProvider.error ?? 'Failed to create booking';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> _processPayment(int bookingId) async {
@@ -190,34 +211,42 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
     bool success = false;
 
     if (_selectedPaymentMethod == 'wallet') {
-      success = await paymentProvider.processWalletPayment(bookingId, amount: _totalFare,
+      success = await paymentProvider.processWalletPayment(
+        bookingId,
+        amount: _totalFare,
       );
     } else {
       success = await paymentProvider.processMobileMoneyPayment(
         bookingId: bookingId,
-        phoneNumber: _phoneController.text.trim(), amount: _totalFare,
+        phoneNumber: _phoneController.text.trim(),
+        amount: _totalFare,
       );
     }
 
     if (mounted) {
       if (success) {
-        // Navigate to payment page or success
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => PaymentPage(
-                  bookingId: bookingId,
-                  amount: _totalFare,
-                  currency: 'TZS',
-                  routeName: widget.routeName,
-                  from: widget.from,
-                  to: widget.to,
-                  startTime: widget.startTime,
-                  passengerCount: _passengerCount,
-                ),
+        print('✅ Payment processed successfully');
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment successful! Booking #$bookingId confirmed.'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
           ),
         );
+
+        // Navigate to HomePage with bookings tab
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => HomePage()),
+          (route) => false, // Clear navigation stack
+        );
+
+        // Switch to bookings tab
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          HomePage.navigateToTab(3); // Bookings tab index
+        });
       } else {
         throw Exception(paymentProvider.error ?? 'Payment failed');
       }
@@ -349,7 +378,7 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
                             _buildDetailRow('Vehicle', widget.vehiclePlate),
                             _buildDetailRow(
                               'Fare per person',
-                              '${widget.fare.toPrice}',
+                              widget.fare.toPrice,
                             ),
                           ],
                         ),
@@ -357,8 +386,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
                     ),
 
                     const SizedBox(height: 16),
-
-                    // Passenger count card
                     FadeTransition(
                       opacity: _fadeAnimation,
                       child: Container(

@@ -1,6 +1,5 @@
 // lib/features/payments/presentation/providers/payment_provider.dart
 import 'dart:async';
-import 'package:daladala_smart_app/core/error/failures.dart';
 import 'package:daladala_smart_app/core/usecases/usecase.dart';
 import 'package:daladala_smart_app/features/payments/domain/usescases/check_payment_status_usecase.dart';
 import 'package:daladala_smart_app/features/payments/domain/usescases/get_payment_details_usecase.dart';

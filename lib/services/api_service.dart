@@ -264,17 +264,17 @@ class ApiService {
 
   Future<Map<String, dynamic>> createBooking({
     required int tripId,
+    required int pickupStopId,
+    required int dropoffStopId,
     required int passengerCount,
-    required String pickupLocation,
-    required String dropoffLocation,
   }) async {
     try {
       final headers = await _getHeaders();
       final data = {
         'trip_id': tripId,
+        'pickup_stop_id': pickupStopId,
+        'dropoff_stop_id': dropoffStopId,
         'passenger_count': passengerCount,
-        'pickup_location': pickupLocation,
-        'dropoff_location': dropoffLocation,
       };
 
       final response = await http.post(
@@ -283,9 +283,12 @@ class ApiService {
         body: json.encode(data),
       );
 
+      print(response);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return json.decode(response.body);
       } else {
+        print('kwayu==============');
         throw Exception('Failed to create booking');
       }
     } catch (e) {
@@ -293,15 +296,14 @@ class ApiService {
     }
   }
 
-  
-
   // Get user bookings
   static Future<List<Map<String, dynamic>>> getUserBookings({
     required String authToken,
     String? status,
   }) async {
     try {
-      String url = '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.bookingsEndpoint}/';
+      String url =
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.bookingsEndpoint}/';
       if (status != null) {
         url += '?status=$status';
       }
@@ -331,7 +333,9 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getAllRoutes() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/'),
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -352,7 +356,9 @@ class ApiService {
   static Future<Map<String, dynamic>?> getRouteById(int routeId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId'),
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -373,7 +379,9 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> searchStops(String query) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.stopsEndpoint}/search?q=$query'),
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.stopsEndpoint}/search?q=$query',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -394,7 +402,9 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getAllStops() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.stopsEndpoint}/'),
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.stopsEndpoint}/',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -415,7 +425,9 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getRouteStops(int routeId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId/stops'),
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId/stops',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -441,7 +453,9 @@ class ApiService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/fare?route_id=$routeId&start_stop_id=$startStopId&end_stop_id=$endStopId&fare_type=$fareType'),
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/fare?route_id=$routeId&start_stop_id=$startStopId&end_stop_id=$endStopId&fare_type=$fareType',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -457,7 +471,6 @@ class ApiService {
       return null;
     }
   }
-
 
   Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
     try {
@@ -709,8 +722,6 @@ class ApiService {
       return [];
     }
   }
-
-
 
   // Auth related methods (if needed)
   Future<Map<String, dynamic>> refreshToken() async {

@@ -27,26 +27,52 @@ class PaymentModel extends Payment {
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
+    // Debug print to help diagnose issues
+    print('🔍 PaymentModel.fromJson received: $json');
+
+    // Safely extract ID fields with proper null checking and type conversion
+    final paymentId = _safeParseInt(json['payment_id'] ?? json['id']);
+    final bookingId = _safeParseInt(json['booking_id']);
+    final userId = _safeParseInt(json['user_id']);
+
+    if (paymentId == null) {
+      throw FormatException(
+        'payment_id is required but was null or invalid: ${json['payment_id'] ?? json['id']}',
+      );
+    }
+
+    if (bookingId == null) {
+      throw FormatException(
+        'booking_id is required but was null or invalid: ${json['booking_id']}',
+      );
+    }
+
+    if (userId == null) {
+      throw FormatException(
+        'user_id is required but was null or invalid: ${json['user_id']}',
+      );
+    }
+
     return PaymentModel(
-      id: json['payment_id'] ?? json['id'],
-      bookingId: json['booking_id'],
-      userId: json['user_id'],
-      amount: (json['amount'] as num).toDouble(),
-      currency: json['currency'] ?? 'TZS',
-      paymentMethod: json['payment_method'],
-      paymentProvider: json['payment_provider'],
-      transactionId: json['transaction_id'],
-      internalReference: json['internal_reference'],
+      id: paymentId,
+      bookingId: bookingId,
+      userId: userId,
+      amount: _safeParseDouble(json['amount']) ?? 0.0,
+      currency: json['currency']?.toString() ?? 'TZS',
+      paymentMethod: json['payment_method']?.toString() ?? '',
+      paymentProvider: json['payment_provider']?.toString(),
+      transactionId: json['transaction_id']?.toString(),
+      internalReference: json['internal_reference']?.toString(),
       paymentTime:
           json['payment_time'] != null
-              ? DateTime.parse(json['payment_time'])
+              ? _safeParseDateTime(json['payment_time'])
               : null,
       initiatedTime:
           json['initiated_time'] != null
-              ? DateTime.parse(json['initiated_time'])
+              ? _safeParseDateTime(json['initiated_time']) ?? DateTime.now()
               : DateTime.now(),
-      status: json['status'],
-      failureReason: json['failure_reason'],
+      status: json['status']?.toString() ?? 'pending',
+      failureReason: json['failure_reason']?.toString(),
       paymentDetails:
           json['payment_details'] != null
               ? Map<String, dynamic>.from(json['payment_details'])
@@ -59,19 +85,60 @@ class PaymentModel extends Payment {
           json['zenopay'] != null
               ? ZenoPayDataModel.fromJson(json['zenopay']).toEntity()
               : null,
-      refundAmount: json['refund_amount']?.toDouble(),
+      refundAmount: _safeParseDouble(json['refund_amount']),
       refundTime:
           json['refund_time'] != null
-              ? DateTime.parse(json['refund_time'])
+              ? _safeParseDateTime(json['refund_time'])
               : null,
-      commissionAmount: json['commission_amount']?.toDouble(),
+      commissionAmount: _safeParseDouble(json['commission_amount']),
       booking:
           json['Booking'] != null || json['booking'] != null
-              ? BookingModel.fromJson(
-                  json['Booking'] ?? json['booking'],
-                )
+              ? BookingModel.fromJson(json['Booking'] ?? json['booking'])
               : null,
     );
+  }
+
+  // Helper method to safely parse integers
+  static int? _safeParseInt(dynamic value) {
+    if (value == null) return null;
+
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      return int.tryParse(value);
+    }
+
+    return null;
+  }
+
+  // Helper method to safely parse doubles
+  static double? _safeParseDouble(dynamic value) {
+    if (value == null) return null;
+
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value);
+    }
+
+    return null;
+  }
+
+  // Helper method to safely parse DateTime
+  static DateTime? _safeParseDateTime(dynamic value) {
+    if (value == null) return null;
+
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        print('⚠️ Failed to parse DateTime: $value');
+        return null;
+      }
+    }
+
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -86,23 +153,19 @@ class PaymentModel extends Payment {
       'transaction_id': transactionId,
       'internal_reference': internalReference,
       'payment_time': paymentTime?.toIso8601String(),
-      'initiated_time': initiatedTime?.toIso8601String(),
+      'initiated_time': initiatedTime!.toIso8601String(),
       'status': status,
       'failure_reason': failureReason,
       'payment_details': paymentDetails,
       'webhook_data': webhookData,
-      'zenopay':
-          zenoPayData != null
-              ? ZenoPayDataModel.fromEntity(zenoPayData!).toJson()
-              : null,
       'refund_amount': refundAmount,
       'refund_time': refundTime?.toIso8601String(),
       'commission_amount': commissionAmount,
-      'booking': booking != null ? (booking as BookingModel).toJson() : null,
     };
   }
 }
 
+// You'll also need to add the ZenoPayDataModel if it doesn't exist
 class ZenoPayDataModel {
   final String? orderId;
   final String? reference;
@@ -122,23 +185,12 @@ class ZenoPayDataModel {
 
   factory ZenoPayDataModel.fromJson(Map<String, dynamic> json) {
     return ZenoPayDataModel(
-      orderId: json['order_id'],
-      reference: json['reference'],
-      message: json['message'],
-      instructions: json['instructions'],
-      channel: json['channel'],
-      msisdn: json['msisdn'],
-    );
-  }
-
-  factory ZenoPayDataModel.fromEntity(ZenoPayData entity) {
-    return ZenoPayDataModel(
-      orderId: entity.orderId,
-      reference: entity.reference,
-      message: entity.message,
-      instructions: entity.instructions,
-      channel: entity.channel,
-      msisdn: entity.msisdn,
+      orderId: json['order_id']?.toString(),
+      reference: json['reference']?.toString(),
+      message: json['message']?.toString(),
+      instructions: json['instructions']?.toString(),
+      channel: json['channel']?.toString(),
+      msisdn: json['msisdn']?.toString(),
     );
   }
 
