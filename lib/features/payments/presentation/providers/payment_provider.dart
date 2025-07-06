@@ -41,10 +41,35 @@ class PaymentProvider extends ChangeNotifier {
   Payment? get currentPayment => _currentPayment;
   Payment? get paymentDetails => _paymentDetails;
 
-  // Clear error
-  void clearError() {
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setProcessingPayment(bool processing) {
+    _isProcessingPayment = processing;
+    notifyListeners();
+  }
+
+  void _setCheckingStatus(bool checking) {
+    _isCheckingStatus = checking;
+    notifyListeners();
+  }
+
+  void _setError(String? error) {
+    _error = error;
+    notifyListeners();
+  }
+
+  void _clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // Clear error
+  void clearError() {
+    _clearError();
   }
 
   // Clear current payment
@@ -54,7 +79,7 @@ class PaymentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Process payment
+  // Process payment (existing method with proper params)
   Future<bool> processPayment({
     required int bookingId,
     required String paymentMethod,
@@ -62,12 +87,11 @@ class PaymentProvider extends ChangeNotifier {
     String? transactionId,
     Map<String, dynamic>? paymentDetails,
   }) async {
-    _isProcessingPayment = true;
-    _error = null;
-    notifyListeners();
-
     try {
-      final result = await processPaymentUseCase(
+      _setProcessingPayment(true);
+      _clearError();
+
+      final result = await processPaymentUseCase.call(
         ProcessPaymentParams(
           bookingId: bookingId,
           paymentMethod: paymentMethod,
@@ -79,137 +103,129 @@ class PaymentProvider extends ChangeNotifier {
 
       return result.fold(
         (failure) {
-          _error = _getFailureMessage(failure);
-          _isProcessingPayment = false;
-          notifyListeners();
+          _setError(failure.message);
           return false;
         },
         (payment) {
           _currentPayment = payment;
-          _isProcessingPayment = false;
-          notifyListeners();
 
           // Start status checking for mobile money payments
-          if (payment.isMobileMoneyPayment && payment.isPending) {
+          if (paymentMethod == 'mobile_money' && payment.isPending) {
             _startStatusChecking(payment.id);
           }
 
+          notifyListeners();
           return true;
         },
       );
     } catch (e) {
-      _error = 'An unexpected error occurred: ${e.toString()}';
-      _isProcessingPayment = false;
-      notifyListeners();
+      _setError(e.toString());
       return false;
+    } finally {
+      _setProcessingPayment(false);
     }
+  }
+
+  // NEW: Process mobile money payment
+  Future<bool> processMobileMoneyPayment({
+    required int bookingId,
+    required String phoneNumber,
+  }) async {
+    return await processPayment(
+      bookingId: bookingId,
+      paymentMethod: 'mobile_money',
+      phoneNumber: phoneNumber,
+    );
+  }
+
+  // NEW: Process wallet payment
+  Future<bool> processWalletPayment(int bookingId) async {
+    return await processPayment(bookingId: bookingId, paymentMethod: 'wallet');
   }
 
   // Get payment history
   Future<void> getPaymentHistory() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
     try {
-      final result = await getPaymentHistoryUseCase(NoParams());
+      _setLoading(true);
+      _clearError();
 
-      result.fold(
-        (failure) {
-          _error = _getFailureMessage(failure);
-          _isLoading = false;
-          notifyListeners();
-        },
-        (payments) {
-          _paymentHistory = payments;
-          _isLoading = false;
-          notifyListeners();
-        },
-      );
+      final result = await getPaymentHistoryUseCase.call(const NoParams());
+
+      result.fold((failure) => _setError(failure.message), (payments) {
+        _paymentHistory = payments;
+        notifyListeners();
+      });
     } catch (e) {
-      _error = 'An unexpected error occurred: ${e.toString()}';
-      _isLoading = false;
-      notifyListeners();
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
     }
   }
 
   // Get payment details
   Future<void> getPaymentDetails(int paymentId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    if (getPaymentDetailsUseCase == null) return;
 
     try {
-      final result = await getPaymentDetailsUseCase!(
+      _setLoading(true);
+      _clearError();
+
+      final result = await getPaymentDetailsUseCase!.call(
         GetPaymentDetailsParams(paymentId: paymentId),
       );
 
-      result.fold(
-        (failure) {
-          _error = _getFailureMessage(failure);
-          _isLoading = false;
-          notifyListeners();
-        },
-        (payment) {
-          _paymentDetails = payment;
-          _isLoading = false;
-          notifyListeners();
-        },
-      );
+      result.fold((failure) => _setError(failure.message), (payment) {
+        _paymentDetails = payment;
+        notifyListeners();
+      });
     } catch (e) {
-      _error = 'An unexpected error occurred: ${e.toString()}';
-      _isLoading = false;
-      notifyListeners();
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // Check payment status manually
+  // Check payment status
   Future<void> checkPaymentStatus(int paymentId) async {
-    _isCheckingStatus = true;
-    _error = null;
-    notifyListeners();
+    if (checkPaymentStatusUseCase == null) return;
 
     try {
-      final result = await checkPaymentStatusUseCase!(
+      _setCheckingStatus(true);
+      _clearError();
+
+      final result = await checkPaymentStatusUseCase!.call(
         CheckPaymentStatusParams(paymentId: paymentId),
       );
 
-      result.fold(
-        (failure) {
-          _error = _getFailureMessage(failure);
-          _isCheckingStatus = false;
-          notifyListeners();
-        },
-        (payment) {
-          _currentPayment = payment;
-          _isCheckingStatus = false;
-          notifyListeners();
+      result.fold((failure) => _setError(failure.message), (payment) {
+        _currentPayment = payment;
 
-          // Stop status checking if payment is completed or failed
-          if (!payment.isPending) {
-            _stopStatusChecking();
-          }
-        },
-      );
+        // Stop status checking if payment is completed or failed
+        if (payment.isCompleted || payment.isFailed) {
+          _stopStatusChecking();
+        }
+
+        notifyListeners();
+      });
     } catch (e) {
-      _error = 'An unexpected error occurred: ${e.toString()}';
-      _isCheckingStatus = false;
-      notifyListeners();
+      _setError(e.toString());
+    } finally {
+      _setCheckingStatus(false);
     }
   }
 
-  // Start automatic status checking for mobile money payments
+  // Start automatic status checking for pending payments
   void _startStatusChecking(int paymentId) {
-    _stopStatusChecking(); // Clear any existing timer
+    _stopStatusChecking(); // Stop any existing timer
 
     _statusCheckTimer = Timer.periodic(
       const Duration(seconds: 10), // Check every 10 seconds
       (timer) async {
         await checkPaymentStatus(paymentId);
 
-        // Stop checking after 5 minutes or if payment is not pending
-        if (timer.tick >= 30 || // 30 * 10 seconds = 5 minutes
-            _currentPayment?.isPending != true) {
+        // Stop checking if payment is no longer pending
+        if (_currentPayment != null &&
+            (!_currentPayment!.isPending || _currentPayment!.isFailed)) {
           _stopStatusChecking();
         }
       },
@@ -222,22 +238,17 @@ class PaymentProvider extends ChangeNotifier {
     _statusCheckTimer = null;
   }
 
-  // Get failure message
-  String _getFailureMessage(Failure failure) {
-    switch (failure.runtimeType) {
-      case ServerFailure _:
-        return failure.message;
-      case NetworkFailure _:
-        return 'No internet connection';
-      case AuthenticationFailure _:
-        return 'Authentication failed. Please login again';
-      case InputFailure _:
-        return failure.message;
-      case NotFoundFailure _:
-        return 'Payment not found';
-      default:
-        return failure.message;
-    }
+  // Clear all data (useful for logout)
+  void clear() {
+    _currentPayment = null;
+    _paymentHistory = null;
+    _paymentDetails = null;
+    _error = null;
+    _isLoading = false;
+    _isProcessingPayment = false;
+    _isCheckingStatus = false;
+    _stopStatusChecking();
+    notifyListeners();
   }
 
   @override
@@ -247,7 +258,8 @@ class PaymentProvider extends ChangeNotifier {
   }
 }
 
-
+// Parameters classes (only if they don't exist in the use case files)
+// Remove these if they already exist in your use case files
 class GetPaymentDetailsParams {
   final int paymentId;
 
@@ -259,4 +271,3 @@ class CheckPaymentStatusParams {
 
   CheckPaymentStatusParams({required this.paymentId});
 }
-

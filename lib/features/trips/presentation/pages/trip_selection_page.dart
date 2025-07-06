@@ -10,6 +10,8 @@ class TripSelectionPage extends StatefulWidget {
   final String routeName;
   final String from;
   final String to;
+  final int pickupStopId;
+  final int dropoffStopId;
 
   const TripSelectionPage({
     super.key,
@@ -17,6 +19,8 @@ class TripSelectionPage extends StatefulWidget {
     required this.routeName,
     required this.from,
     required this.to,
+    required this.pickupStopId,
+    required this.dropoffStopId,
   });
 
   @override
@@ -26,7 +30,7 @@ class TripSelectionPage extends StatefulWidget {
 class _TripSelectionPageState extends State<TripSelectionPage> {
   bool _isLoading = true;
   DateTime _selectedDate = DateTime.now();
-  
+
   // Sample trip data
   final List<Map<String, dynamic>> _trips = [
     {
@@ -63,42 +67,42 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
       'features': ['AC'],
     },
   ];
-  
+
   List<DateTime> _availableDates = [];
-  
+
   @override
   void initState() {
     super.initState();
     _loadTrips();
     _generateAvailableDates();
   }
-  
+
   void _generateAvailableDates() {
     final now = DateTime.now();
     _availableDates = List.generate(7, (index) {
       return DateTime(now.year, now.month, now.day + index);
     });
   }
-  
+
   Future<void> _loadTrips() async {
     // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   void _selectDate(DateTime date) {
     setState(() {
       _selectedDate = date;
     });
-    
+
     // Reload trips for the selected date
     setState(() {
       _isLoading = true;
     });
-    
+
     _loadTrips();
   }
 
@@ -164,7 +168,7 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
               ],
             ),
           ),
-          
+
           // Date selection
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -182,72 +186,79 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
-                children: _availableDates.map((date) {
-                  final isSelected = date.day == _selectedDate.day &&
-                      date.month == _selectedDate.month &&
-                      date.year == _selectedDate.year;
-                  
-                  return GestureDetector(
-                    onTap: () => _selectDate(date),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryColor
-                            : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            date.shortDayName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isSelected
-                                  ? Colors.white70
-                                  : AppTheme.textSecondaryColor,
-                            ),
+                children:
+                    _availableDates.map((date) {
+                      final isSelected =
+                          date.day == _selectedDate.day &&
+                          date.month == _selectedDate.month &&
+                          date.year == _selectedDate.year;
+
+                      return GestureDetector(
+                        onTap: () => _selectDate(date),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            date.day.toString(),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.textPrimaryColor,
-                            ),
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            date.shortMonthName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isSelected
-                                  ? Colors.white70
-                                  : AppTheme.textSecondaryColor,
-                            ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                date.shortDayName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      isSelected
+                                          ? Colors.white70
+                                          : AppTheme.textSecondaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                date.day.toString(),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      isSelected
+                                          ? Colors.white
+                                          : AppTheme.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                date.shortMonthName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      isSelected
+                                          ? Colors.white70
+                                          : AppTheme.textSecondaryColor,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+                        ),
+                      );
+                    }).toList(),
               ),
             ),
           ),
-          
+
           // Trips list
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _trips.isEmpty
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _trips.isEmpty
                     ? _buildNoTripsView()
                     : _buildTripsList(),
           ),
@@ -255,7 +266,7 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
       ),
     );
   }
-  
+
   Widget _buildNoTripsView() {
     return Center(
       child: Padding(
@@ -263,11 +274,7 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.event_busy,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.event_busy, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               'No trips available',
@@ -281,9 +288,7 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
             Text(
               'There are no trips available for the selected date. Please try another date.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTheme.textSecondaryColor,
-              ),
+              style: TextStyle(color: AppTheme.textSecondaryColor),
             ),
             const SizedBox(height: 24),
             CustomButton(
@@ -300,7 +305,7 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
       ),
     );
   }
-  
+
   Widget _buildTripsList() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -321,15 +326,18 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => BookingConfirmationPage(
-                  tripId: trip['id'],
-                  routeName: widget.routeName,
-                  from: widget.from,
-                  to: widget.to,
-                  startTime: trip['start_time'],
-                  fare: trip['fare'],
-                  vehiclePlate: trip['vehicle_plate'],
-                ),
+                builder:
+                    (_) => BookingConfirmationPage(
+                      tripId: trip['id'],
+                      routeName: widget.routeName,
+                      from: widget.from,
+                      to: widget.to,
+                      startTime: trip['start_time'],
+                      fare: trip['fare'],
+                      vehiclePlate: trip['vehicle_plate'],
+                      pickupStopId: widget.pickupStopId, // ✅ Added this
+                      dropoffStopId: widget.dropoffStopId, // ✅ Added this
+                    ),
               ),
             );
           },

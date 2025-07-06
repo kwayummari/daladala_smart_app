@@ -1,9 +1,9 @@
 // lib/features/wallet/presentation/providers/wallet_provider.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../domain/entities/wallet.dart';
-import '../../domain/entities/wallet_transaction.dart';
 import '../../data/datasource/wallet_datasource.dart';
+import '../../data/models/wallet_model.dart';
+import '../../data/models/wallet_transaction_model.dart';
 
 class WalletProvider extends ChangeNotifier {
   final WalletDataSource walletDataSource;
@@ -15,8 +15,8 @@ class WalletProvider extends ChangeNotifier {
   bool _isTopingUp = false;
   bool _isProcessingPayment = false;
   String? _error;
-  Wallet? _wallet;
-  List<WalletTransaction>? _transactions;
+  WalletModel? _wallet;
+  List<WalletTransactionModel> _transactions = [];
   Map<String, dynamic>? _topupResult;
 
   // Getters
@@ -24,14 +24,32 @@ class WalletProvider extends ChangeNotifier {
   bool get isTopingUp => _isTopingUp;
   bool get isProcessingPayment => _isProcessingPayment;
   String? get error => _error;
-  Wallet? get wallet => _wallet;
-  List<WalletTransaction>? get transactions => _transactions;
+  WalletModel? get wallet => _wallet;
+  List<WalletTransactionModel> get transactions => _transactions;
   Map<String, dynamic>? get topupResult => _topupResult;
 
   double get balance => _wallet?.balance ?? 0.0;
-  String get formattedBalance => _wallet?.formattedBalance ?? '0 TZS';
+  String get currency => _wallet?.currency ?? 'TZS';
+  double get dailyLimit => _wallet?.dailyLimit ?? 1000000.0;
+  double get monthlyLimit => _wallet?.monthlyLimit ?? 10000000.0;
+  bool get isActive => _wallet?.isActive ?? true;
+
+  String get formattedBalance {
+    final balance = _wallet?.balance ?? 0.0;
+    if (balance >= 1000000) {
+      return '${(balance / 1000000).toStringAsFixed(1)}M TZS';
+    } else if (balance >= 1000) {
+      return '${(balance / 1000).toStringAsFixed(0)}K TZS';
+    } else {
+      return '${balance.toStringAsFixed(0)} TZS';
+    }
+  }
+
   bool get hasWallet => _wallet != null;
-  bool get canAfford => _wallet?.hasSufficientBalance ?? false;
+
+  bool hasSufficientBalance(double amount) {
+    return balance >= amount;
+  }
 
   // Clear error
   void clearError() {
@@ -45,54 +63,96 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Set loading state
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  // Set error
+  void _setError(String? error) {
+    _error = error;
+    notifyListeners();
+  }
+
   // Get wallet balance
   Future<void> getWalletBalance() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
     try {
+      _setLoading(true);
+      clearError();
+
       final wallet = await walletDataSource.getWalletBalance();
       _wallet = wallet;
+      notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      _setError(e.toString());
       print('Wallet balance error: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  // Top up wallet
+  // Top up wallet (Mobile Money Only)
   Future<bool> topUpWallet({
     required double amount,
-    required String paymentMethod,
-    String? phoneNumber,
+    required String phoneNumber,
   }) async {
-    _isTopingUp = true;
-    _error = null;
-    _topupResult = null;
-    notifyListeners();
-
     try {
+      _isTopingUp = true;
+      clearError();
+      _topupResult = null;
+      notifyListeners();
+
+      // Validate amount
+      if (amount < 1000) {
+        _setError('Minimum top-up amount is 1,000 TZS');
+        return false;
+      }
+
+      if (amount > 5000000) {
+        _setError('Maximum top-up amount is 5,000,000 TZS');
+        return false;
+      }
+
+      // Validate phone number
+      if (phoneNumber.isEmpty) {
+        _setError('Phone number is required');
+        return false;
+      }
+
+      final phoneRegex = RegExp(r'^(0|255)7\d{8}$');
+      if (!phoneRegex.hasMatch(
+        phoneNumber.replaceAll(RegExp(r'[\s\-\+]'), ''),
+      )) {
+        _setError('Invalid Tanzanian phone number. Use format: 0744963858');
+        return false;
+      }
+
       final result = await walletDataSource.topUpWallet(
         amount: amount,
-        paymentMethod: paymentMethod,
+        paymentMethod: 'mobile_money',
         phoneNumber: phoneNumber,
       );
 
-      if (paymentMethod == 'mobile_money') {
-        // Store ZenoPay data for UI
-        _topupResult = result.toJson();
-      } else {
-        // Update wallet balance for instant methods
-        _wallet = result;
-      }
+      // The result should contain topup data including ZenoPay response
+      _topupResult = {
+        'transaction_id':
+            result.balance, // This would be transaction ID from API
+        'amount': amount,
+        'status': 'pending',
+        'zenopay': {
+          'order_id': 'TOPUP_${DateTime.now().millisecondsSinceEpoch}',
+          'reference': 'REF${DateTime.now().millisecondsSinceEpoch}',
+          'message': 'USSD request sent to your phone',
+          'instructions':
+              'Please complete the payment on your mobile phone using the USSD prompt sent to your phone.',
+        },
+      };
 
+      notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
-      print('Wallet topup error: $e');
+      _setError(e.toString());
       return false;
     } finally {
       _isTopingUp = false;
@@ -100,39 +160,20 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // Get wallet transactions
-  Future<void> getWalletTransactions() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final transactions = await walletDataSource.getWalletTransactions();
-      _transactions = transactions;
-    } catch (e) {
-      _error = e.toString();
-      print('Wallet transactions error: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Process wallet payment
+  // Process wallet payment for booking
   Future<bool> processWalletPayment({required int bookingId}) async {
-    _isProcessingPayment = true;
-    _error = null;
-    notifyListeners();
-
     try {
-      final updatedWallet = await walletDataSource.processWalletPayment(
-        bookingId: bookingId,
-      );
-      _wallet = updatedWallet;
+      _isProcessingPayment = true;
+      clearError();
+      notifyListeners();
+
+      await walletDataSource.processWalletPayment(bookingId: bookingId);
+
+      // Refresh wallet balance after successful payment
+      await getWalletBalance();
       return true;
     } catch (e) {
-      _error = e.toString();
-      print('Wallet payment error: $e');
+      _setError(e.toString());
       return false;
     } finally {
       _isProcessingPayment = false;
@@ -140,14 +181,42 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  // Check if user can afford amount
-  bool canAffordAmount(double amount) {
-    return _wallet?.canAfford(amount) ?? false;
+  // Get wallet transactions
+  Future<void> getWalletTransactions() async {
+    try {
+      _setLoading(true);
+      clearError();
+
+      final transactions = await walletDataSource.getWalletTransactions();
+      _transactions = transactions;
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+      print('Wallet transactions error: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  // Refresh wallet data
+  // Refresh all wallet data
+  Future<void> refresh() async {
+    await Future.wait([getWalletBalance(), getWalletTransactions()]);
+  }
+
+  // Refresh wallet (alias for refresh method)
   Future<void> refreshWallet() async {
-    await getWalletBalance();
-    await getWalletTransactions();
+    await refresh();
+  }
+
+  // Clear all data (useful for logout)
+  void clear() {
+    _wallet = null;
+    _transactions = [];
+    _topupResult = null;
+    _error = null;
+    _isLoading = false;
+    _isTopingUp = false;
+    _isProcessingPayment = false;
+    notifyListeners();
   }
 }

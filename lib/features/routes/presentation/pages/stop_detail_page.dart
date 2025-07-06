@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../../core/ui/widgets/error_view.dart';
+import '../../../../core/ui/widgets/custom_button.dart';
 import '../widgets/upcoming_departure_item.dart';
 import '../../../trips/presentation/pages/trip_selection_page.dart';
 
@@ -56,18 +57,40 @@ class _StopDetailPageState extends State<StopDetailPage> {
           'route_name': 'R001: Mbezi - CBD',
           'start_point': 'Mbezi Mwisho',
           'end_point': 'Posta CBD',
+          'stops': [
+            {'id': 1, 'name': 'Mbezi Mwisho Terminal'},
+            {'id': 2, 'name': 'Mbezi Beach'},
+            {'id': 3, 'name': 'Sinza Mori'},
+            {'id': 4, 'name': 'Mwenge Bus Terminal'},
+            {'id': 5, 'name': 'Msimbazi'},
+            {'id': 6, 'name': 'Posta CBD'},
+          ],
         },
         {
           'id': 2,
           'route_name': 'R002: Kimara - CBD',
           'start_point': 'Kimara Mwisho',
           'end_point': 'Posta CBD',
+          'stops': [
+            {'id': 7, 'name': 'Kimara Mwisho'},
+            {'id': 8, 'name': 'Kimara Korogwe'},
+            {'id': 4, 'name': 'Mwenge Bus Terminal'},
+            {'id': 9, 'name': 'Ubungo'},
+            {'id': 6, 'name': 'Posta CBD'},
+          ],
         },
         {
           'id': 3,
           'route_name': 'R003: Tegeta - CBD',
           'start_point': 'Tegeta Mwisho',
           'end_point': 'Posta CBD',
+          'stops': [
+            {'id': 10, 'name': 'Tegeta Mwisho'},
+            {'id': 11, 'name': 'Tegeta Wazo'},
+            {'id': 4, 'name': 'Mwenge Bus Terminal'},
+            {'id': 12, 'name': 'Mlimani City'},
+            {'id': 6, 'name': 'Posta CBD'},
+          ],
         },
       ],
       'upcoming_departures': [
@@ -141,22 +164,183 @@ class _StopDetailPageState extends State<StopDetailPage> {
     }
   }
 
+  void _navigateToTripSelection(Map<String, dynamic> departure) {
+    // Find the route to get its stops
+    final route = (_stopData!['routes'] as List).firstWhere(
+      (r) => r['id'] == departure['route_id'],
+    );
+    
+    _showDestinationSelectionDialog(departure, route);
+  }
+
+  void _showDestinationSelectionDialog(Map<String, dynamic> departure, Map<String, dynamic> route) {
+    final routeStops = route['stops'] as List<Map<String, dynamic>>;
+    final currentStopId = _stopData!['id'] as int;
+    
+    // Filter stops that come after the current stop (for departure)
+    final availableDestinations = routeStops
+        .where((stop) => stop['id'] != currentStopId)
+        .toList();
+
+    int? selectedDestinationId;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              Text(
+                'Select Destination',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.circle, color: Colors.green, size: 12),
+                    const SizedBox(width: 8),
+                    Text('From: ${_stopData!['name']}'),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              Text(
+                'Choose your destination along ${route['route_name']}:',
+                style: TextStyle(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 14,
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Destinations list
+              Expanded(
+                child: ListView.builder(
+                  itemCount: availableDestinations.length,
+                  itemBuilder: (context, index) {
+                    final stop = availableDestinations[index];
+                    final isSelected = selectedDestinationId == stop['id'];
+                    
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: isSelected ? Colors.red : Colors.grey.shade300,
+                        child: Icon(
+                          Icons.location_on,
+                          color: isSelected ? Colors.white : Colors.grey.shade600,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        stop['name'] as String,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: isSelected 
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.red,
+                            )
+                          : null,
+                      onTap: () {
+                        setModalState(() {
+                          selectedDestinationId = stop['id'] as int;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: CustomButton(
+                      text: 'View Trips',
+                      onPressed: selectedDestinationId != null
+                          ? () {
+                              Navigator.pop(context);
+                              
+                              final destinationStop = availableDestinations.firstWhere(
+                                (s) => s['id'] == selectedDestinationId
+                              );
+                              
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TripSelectionPage(
+                                    routeId: departure['route_id'],
+                                    routeName: departure['route_name'],
+                                    from: _stopData!['name'],
+                                    to: destinationStop['name'] as String,
+                                    pickupStopId: currentStopId,           // ✅ Current stop as pickup
+                                    dropoffStopId: selectedDestinationId!, // ✅ Selected destination
+                                  ),
+                                ),
+                              );
+                            }
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Stop Details'),
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-        ),
-        body: const Center(
-          child: LoadingIndicator(),
-        ),
-      );
-    }
-
-    if (_stopData == null) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Stop Details'),
@@ -403,19 +587,7 @@ class _StopDetailPageState extends State<StopDetailPage> {
                                 destination: departure['destination'],
                                 vehicleType: departure['vehicle_type'],
                                 availableSeats: departure['available_seats'],
-                                onBookTrip: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => TripSelectionPage(
-                                        routeId: departure['route_id'],
-                                        routeName: departure['route_name'],
-                                        from: _stopData!['name'],
-                                        to: departure['destination'],
-                                      ),
-                                    ),
-                                  );
-                                },
+                                onBookTrip: () => _navigateToTripSelection(departure), // ✅ Now shows destination selection
                               );
                             },
                           ),
