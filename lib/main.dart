@@ -1,4 +1,5 @@
 import 'package:daladala_smart_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:daladala_smart_app/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -46,6 +47,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => getIt<PaymentProvider>()),
         ChangeNotifierProvider<ProfileProvider>(
           create: (_) => getIt<ProfileProvider>(),
+        ),
+        // ADD THIS LINE:
+        ChangeNotifierProvider<WalletProvider>(
+          create: (_) => getIt<WalletProvider>(),
         ),
       ],
       child: MaterialApp(

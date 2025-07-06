@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static final String baseUrl =
@@ -109,6 +110,475 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Upload error: $e');
+    }
+  }
+
+  // Wallet Methods
+  Future<Map<String, dynamic>> getWalletBalance() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/wallet/balance'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load wallet balance');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getWalletTransactions({
+    int page = 1,
+    int limit = 20,
+    String? type,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (type != null) 'type': type,
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/wallet/transactions',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load wallet transactions');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> topUpWallet({
+    required double amount,
+    required String paymentMethod,
+    String? phoneNumber,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final data = {
+        'amount': amount,
+        'payment_method': paymentMethod,
+        if (phoneNumber != null) 'phone_number': phoneNumber,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/wallet/topup'),
+        headers: headers,
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to top up wallet');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> processWalletPayment({
+    required int bookingId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final data = {'booking_id': bookingId};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/wallet/pay'),
+        headers: headers,
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to process wallet payment');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Booking Methods
+  Future<Map<String, dynamic>> getBookings({
+    int page = 1,
+    int limit = 10,
+    String? status,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (status != null) 'status': status,
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/bookings',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load bookings');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getBookingDetails(int bookingId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/bookings/$bookingId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load booking details');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createBooking({
+    required int tripId,
+    required int passengerCount,
+    required String pickupLocation,
+    required String dropoffLocation,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final data = {
+        'trip_id': tripId,
+        'passenger_count': passengerCount,
+        'pickup_location': pickupLocation,
+        'dropoff_location': dropoffLocation,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings'),
+        headers: headers,
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to create booking');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.put(
+        Uri.parse('$baseUrl/bookings/$bookingId/cancel'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to cancel booking');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Payment Methods
+  Future<Map<String, dynamic>> processPayment({
+    required int bookingId,
+    required String paymentMethod,
+    String? phoneNumber,
+    Map<String, dynamic>? paymentDetails,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final data = {
+        'booking_id': bookingId,
+        'payment_method': paymentMethod,
+        if (phoneNumber != null) 'phone_number': phoneNumber,
+        if (paymentDetails != null) 'payment_details': paymentDetails,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/process'),
+        headers: headers,
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to process payment');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getPaymentStatus(int paymentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/payments/$paymentId/status'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to get payment status');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Trips Methods
+  Future<Map<String, dynamic>> getTrips({
+    String? from,
+    String? to,
+    DateTime? date,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (from != null) 'from': from,
+        if (to != null) 'to': to,
+        if (date != null) 'date': date.toIso8601String().split('T')[0],
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/trips',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load trips');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getTripDetails(int tripId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/trips/$tripId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load trip details');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Notifications Methods
+  Future<Map<String, dynamic>> getNotifications({
+    int page = 1,
+    int limit = 20,
+    bool? isRead,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (isRead != null) 'is_read': isRead.toString(),
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/notifications',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load notifications');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> markNotificationAsRead(
+    int notificationId,
+  ) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.put(
+        Uri.parse('$baseUrl/notifications/$notificationId/read'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to mark notification as read');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.put(
+        Uri.parse('$baseUrl/notifications/mark-all-read'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to mark all notifications as read');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Dashboard/Stats Methods
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/dashboard/stats'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load dashboard stats');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // ZenoPay Integration Methods
+  Future<Map<String, dynamic>> checkZenoPayStatus(String orderId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/payments/zenopay/status/$orderId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to check ZenoPay status');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Helper method to handle API errors
+  Map<String, dynamic> _handleApiError(http.Response response) {
+    try {
+      final errorData = json.decode(response.body);
+      return {
+        'status': 'error',
+        'message': errorData['message'] ?? 'Unknown error occurred',
+        'status_code': response.statusCode,
+      };
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Failed to parse error response',
+        'status_code': response.statusCode,
+      };
+    }
+  }
+
+  // Auth related methods (if needed)
+  Future<Map<String, dynamic>> refreshToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString('refresh_token');
+
+      if (refreshToken == null) {
+        throw Exception('No refresh token available');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'refresh_token': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Update stored tokens
+        await prefs.setString('auth_token', data['data']['access_token']);
+        if (data['data']['refresh_token'] != null) {
+          await prefs.setString('refresh_token', data['data']['refresh_token']);
+        }
+
+        return data;
+      } else {
+        throw Exception('Failed to refresh token');
+      }
+    } catch (e) {
+      throw Exception('Token refresh error: $e');
+    }
+  }
+
+  // Utility method to logout (clear tokens)
+  Future<void> logout() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
+      await prefs.remove('user_data');
+    } catch (e) {
+      print('Error during logout: $e');
     }
   }
 }

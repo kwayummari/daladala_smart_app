@@ -1,6 +1,7 @@
 import 'package:daladala_smart_app/core/network/api_client.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/cancel_booking_usecase.dart';
 import 'package:daladala_smart_app/features/bookings/domain/usecases/get_booking_details_usecase.dart';
+import 'package:daladala_smart_app/features/payments/domain/usescases/get_wallet_balance_usecase.dart';
 import 'package:daladala_smart_app/features/profile/data/datasources/profile_datasource.dart';
 import 'package:daladala_smart_app/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:daladala_smart_app/features/profile/domain/repositories/profile_repository.dart';
@@ -11,6 +12,8 @@ import 'package:daladala_smart_app/features/trips/domains/repositories/trip_repo
 import 'package:daladala_smart_app/features/trips/domains/usecases/get_trip_details_usecase.dart';
 import 'package:daladala_smart_app/features/trips/domains/usecases/get_upcoming_trips_usecase.dart';
 import 'package:daladala_smart_app/features/trips/presentation/providers/trip_provider.dart';
+import 'package:daladala_smart_app/features/wallet/data/datasource/wallet_datasource.dart';
+import 'package:daladala_smart_app/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
@@ -258,5 +261,14 @@ Future<void> setupServiceLocator() async {
 
   getIt.registerFactory<ProfileProvider>(
     () => ProfileProvider(repository: getIt<ProfileRepository>()),
+  );
+
+  // Wallet Feature Dependencies (ADD THIS)
+  getIt.registerSingleton<WalletDataSource>(
+    WalletDataSourceImpl(dioClient: getIt<DioClient>()),
+  );
+
+  getIt.registerFactory<WalletProvider>(
+    () => WalletProvider(walletDataSource: getIt<WalletDataSource>()),
   );
 }
