@@ -157,6 +157,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
     final success = await walletProvider.processWalletPayment(
       bookingId: widget.bookingId,
+      amount: widget.amount, // ✅ Pass the amount
     );
 
     if (mounted) {
@@ -191,6 +192,7 @@ class _PaymentPageState extends State<PaymentPage> {
     final success = await paymentProvider.processPayment(
       bookingId: widget.bookingId,
       paymentMethod: _selectedPaymentMethod!,
+      amount: widget.amount.toString(),
       phoneNumber:
           _selectedPaymentMethod == 'mobile_money'
               ? _phoneController.text.trim()

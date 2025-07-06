@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:daladala_smart_app/core/utils/constants.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -292,6 +293,172 @@ class ApiService {
     }
   }
 
+  
+
+  // Get user bookings
+  static Future<List<Map<String, dynamic>>> getUserBookings({
+    required String authToken,
+    String? status,
+  }) async {
+    try {
+      String url = '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.bookingsEndpoint}/';
+      if (status != null) {
+        url += '?status=$status';
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching user bookings: $e');
+      return [];
+    }
+  }
+
+  // Get all routes
+  static Future<List<Map<String, dynamic>>> getAllRoutes() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching routes: $e');
+      return [];
+    }
+  }
+
+  // Get route by ID
+  static Future<Map<String, dynamic>?> getRouteById(int routeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return data['data'];
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching route: $e');
+      return null;
+    }
+  }
+
+  // Search stops
+  static Future<List<Map<String, dynamic>>> searchStops(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.stopsEndpoint}/search?q=$query'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error searching stops: $e');
+      return [];
+    }
+  }
+
+  // Get all stops
+  static Future<List<Map<String, dynamic>>> getAllStops() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.stopsEndpoint}/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching stops: $e');
+      return [];
+    }
+  }
+
+  // Get route stops
+  static Future<List<Map<String, dynamic>>> getRouteStops(int routeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId/stops'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching route stops: $e');
+      return [];
+    }
+  }
+
+  // Get fare between stops
+  static Future<Map<String, dynamic>?> getFareBetweenStops({
+    required int routeId,
+    required int startStopId,
+    required int endStopId,
+    String fareType = 'standard',
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/fare?route_id=$routeId&start_stop_id=$startStopId&end_stop_id=$endStopId&fare_type=$fareType'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return data['data'];
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching fare: $e');
+      return null;
+    }
+  }
+
+
   Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
     try {
       final headers = await _getHeaders();
@@ -517,6 +684,32 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  static Future<List<Map<String, dynamic>>> searchRoutes({
+    required String startPoint,
+    required String endPoint,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/search?start_point=$startPoint&end_point=$endPoint',
+        ),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching trips: $e');
+      return [];
+    }
+  }
+
 
 
   // Auth related methods (if needed)

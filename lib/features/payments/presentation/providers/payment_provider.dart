@@ -85,6 +85,7 @@ class PaymentProvider extends ChangeNotifier {
     required String paymentMethod,
     String? phoneNumber,
     String? transactionId,
+    String? amount,
     Map<String, dynamic>? paymentDetails,
   }) async {
     try {
@@ -98,6 +99,7 @@ class PaymentProvider extends ChangeNotifier {
           phoneNumber: phoneNumber,
           transactionId: transactionId,
           paymentDetails: paymentDetails,
+          amount: amount
         ),
       );
 
@@ -130,17 +132,30 @@ class PaymentProvider extends ChangeNotifier {
   Future<bool> processMobileMoneyPayment({
     required int bookingId,
     required String phoneNumber,
+    required double amount,
   }) async {
     return await processPayment(
       bookingId: bookingId,
       paymentMethod: 'mobile_money',
       phoneNumber: phoneNumber,
+      paymentDetails: {
+        'amount': amount,
+        'phone_number': phoneNumber,
+      },
     );
   }
 
   // NEW: Process wallet payment
-  Future<bool> processWalletPayment(int bookingId) async {
-    return await processPayment(bookingId: bookingId, paymentMethod: 'wallet');
+  Future<bool> processWalletPayment(int bookingId, {
+    required double amount, 
+  }) async {
+    return await processPayment(
+      bookingId: bookingId,
+      paymentMethod: 'wallet',
+      paymentDetails: {
+        'amount': amount,
+      },
+    );
   }
 
   // Get payment history

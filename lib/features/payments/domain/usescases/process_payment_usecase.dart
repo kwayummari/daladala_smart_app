@@ -28,6 +28,7 @@ class ProcessPaymentParams {
   final String? phoneNumber;
   final String? transactionId;
   final Map<String, dynamic>? paymentDetails;
+  final String? amount;
 
   ProcessPaymentParams({
     required this.bookingId,
@@ -35,5 +36,6 @@ class ProcessPaymentParams {
     this.phoneNumber,
     this.transactionId,
     this.paymentDetails,
+    this.amount,
   });
 }

@@ -190,11 +190,12 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
     bool success = false;
 
     if (_selectedPaymentMethod == 'wallet') {
-      success = await paymentProvider.processWalletPayment(bookingId);
+      success = await paymentProvider.processWalletPayment(bookingId, amount: _totalFare,
+      );
     } else {
       success = await paymentProvider.processMobileMoneyPayment(
         bookingId: bookingId,
-        phoneNumber: _phoneController.text.trim(),
+        phoneNumber: _phoneController.text.trim(), amount: _totalFare,
       );
     }
 

@@ -161,24 +161,65 @@ class WalletProvider extends ChangeNotifier {
   }
 
   // Process wallet payment for booking
-  Future<bool> processWalletPayment({required int bookingId}) async {
+  Future<bool> processWalletPayment({
+    required int bookingId,
+    required double amount, // ✅ Added amount parameter
+  }) async {
     try {
-      _isProcessingPayment = true;
-      clearError();
-      notifyListeners();
+      _setProcessingPayment(true);
+      _clearError();
 
-      await walletDataSource.processWalletPayment(bookingId: bookingId);
+      print('💳 Processing wallet payment:');
+      print('   Booking ID: $bookingId');
+      print('   Amount: $amount');
+      print('   Current Balance: $balance');
 
-      // Refresh wallet balance after successful payment
-      await getWalletBalance();
-      return true;
+      // Check sufficient balance
+      if (!hasSufficientBalance(amount)) {
+        _setError(
+          'Insufficient wallet balance. Required: $amount, Available: $balance',
+        );
+        return false;
+      }
+
+      // Call the wallet payment API
+      final result = await walletDataSource.processWalletPayment(
+        bookingId: bookingId,
+        amount: amount, // ✅ Pass amount to datasource
+      );
+
+      // Assuming processWalletPayment returns a WalletModel on success, null on failure
+      if (result != null) {
+        // Update local wallet balance
+        _wallet = result;
+
+        // Refresh wallet data to get updated balance and transactions
+        await getWalletBalance();
+
+        return true;
+      } else {
+        _setError('Wallet payment failed');
+        return false;
+      }
     } catch (e) {
-      _setError(e.toString());
+      print('💥 Wallet payment error: $e');
+      _setError('Payment failed: ${e.toString()}');
       return false;
     } finally {
-      _isProcessingPayment = false;
-      notifyListeners();
+      _setProcessingPayment(false);
     }
+  }
+
+  // Helper method to set processing payment state
+  void _setProcessingPayment(bool processing) {
+    _isProcessingPayment = processing;
+    notifyListeners();
+  }
+
+  // Helper method to clear error
+  void _clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   // Get wallet transactions

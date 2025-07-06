@@ -13,7 +13,8 @@ abstract class WalletDataSource {
     String? phoneNumber,
   });
   Future<List<WalletTransactionModel>> getWalletTransactions();
-  Future<WalletModel> processWalletPayment({required int bookingId});
+  Future<WalletModel> processWalletPayment({required int bookingId, required double amount,
+  });
 }
 
 class WalletDataSourceImpl implements WalletDataSource {
@@ -96,19 +97,34 @@ class WalletDataSourceImpl implements WalletDataSource {
   }
   
   @override
-  Future<WalletModel> processWalletPayment({required int bookingId}) async {
+  Future<WalletModel> processWalletPayment({
+    required int bookingId,
+    required double amount,
+  }) async {
     try {
-      final response = await dioClient.post('/wallet/pay', data: {
-        'booking_id': bookingId,
-      });
-      
-      if (response['status'] == 'success') {
-        // Return updated wallet balance
-        return await getWalletBalance();
+      print('🌐 WalletDataSource: Processing wallet payment');
+      print('   Booking ID: $bookingId');
+      print('   Amount: $amount');
+
+      final response = await dioClient.post(
+        '/payments', // This calls POST /api/payments
+        data: {
+          'booking_id': bookingId,
+          'payment_method': 'wallet',
+          'amount': amount, // ✅ Include amount in request
+          'currency': 'TZS',
+        },
+      );
+
+      print('📡 Wallet payment response: $response');
+
+      if (response != null && response['status'] == 'success') {
+        return WalletModel.fromJson(response['data']);
       } else {
-        throw ServerException(message: response['message']);
+        throw ServerException(message: response?['message'] ?? 'Wallet payment failed');
       }
     } catch (e) {
+      print('💥 WalletDataSource error: $e');
       rethrow;
     }
   }

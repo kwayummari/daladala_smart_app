@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:lottie/lottie.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/widgets/custom_input.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
+import '../../../../core/utils/constants.dart';
 import '../widgets/route_selection_result.dart';
 import '../../../trips/presentation/pages/trip_selection_page.dart';
 
@@ -19,6 +22,7 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
 
   bool _isSearching = false;
   bool _showResults = false;
+  List<Map<String, dynamic>> _searchResults = [];
 
   @override
   void dispose() {
@@ -45,13 +49,41 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
       _showResults = false;
     });
 
-    // Simulate API call to search for routes
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Search for routes based on start and end points
+      final response = await http.get(
+        Uri.parse(
+          '${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/search?start_point=${_fromController.text}&end_point=${_toController.text}',
+        ),
+        headers: {'Content-Type': 'application/json'},
+      );
 
-    setState(() {
-      _isSearching = false;
-      _showResults = true;
-    });
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _searchResults = List<Map<String, dynamic>>.from(data['data']);
+            _showResults = true;
+          });
+        } else {
+          _showError(data['message'] ?? 'Failed to search routes');
+        }
+      } else {
+        _showError('Failed to connect to server');
+      }
+    } catch (e) {
+      _showError('Network error: $e');
+    } finally {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   void _navigateToTripSelection(Map<String, dynamic> route) {
@@ -59,207 +91,294 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
     _showStopSelectionDialog(route);
   }
 
-  void _showStopSelectionDialog(Map<String, dynamic> route) {
-    // Sample stops for the route (in real app, fetch from API)
-    final routeStops = [
-      {'id': 1, 'name': 'Mbezi Mwisho Terminal', 'is_major': true},
-      {'id': 2, 'name': 'Mbezi Beach', 'is_major': false},
-      {'id': 3, 'name': 'Sinza Mori', 'is_major': false},
-      {'id': 4, 'name': 'Mwenge Bus Terminal', 'is_major': true},
-      {'id': 5, 'name': 'Msimbazi', 'is_major': false},
-      {'id': 6, 'name': 'Posta CBD', 'is_major': true},
-    ];
+  Future<List<Map<String, dynamic>>> _fetchRouteStops(int routeId) async {
+    try {
+      // Debug: Print the full URL being called
+      final url =
+          '${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/$routeId/stops';
+      print('🔍 Fetching route stops from: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      // Debug: Print response details
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response headers: ${response.headers}');
+      print('📡 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('📦 Parsed data: $data');
+
+        if (data['status'] == 'success') {
+          final stops = List<Map<String, dynamic>>.from(data['data']);
+          print('✅ Successfully parsed ${stops.length} stops');
+          return stops;
+        } else {
+          print('❌ API returned error status: ${data['status']}');
+          print('❌ Error message: ${data['message']}');
+        }
+      } else {
+        print('❌ HTTP Error: ${response.statusCode}');
+        print('❌ Response body: ${response.body}');
+      }
+      return [];
+    } catch (e) {
+      print('💥 Exception in _fetchRouteStops: $e');
+      print('💥 Exception type: ${e.runtimeType}');
+      return [];
+    }
+  }
+
+  // Also update the _showStopSelectionDialog method to handle empty stops better
+  void _showStopSelectionDialog(Map<String, dynamic> route) async {
+    print('🎯 Starting stop selection for route: ${route['route_id']}');
+
+    // Show loading dialog first
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Fetch stops for the route
+    final routeStops = await _fetchRouteStops(route['route_id']);
+
+    print(
+      '📍 Fetched ${routeStops.length} stops for route ${route['route_id']}',
+    );
+
+    // Close loading dialog
+    Navigator.pop(context);
+
+    if (routeStops.isEmpty) {
+      print('⚠️ No stops found for route ${route['route_id']}');
+      _showError('No stops found for this route. Please try another route.');
+      return;
+    }
+
+    // Debug: Print first stop to see data structure
+    if (routeStops.isNotEmpty) {
+      print('📋 First stop data structure: ${routeStops.first}');
+    }
 
     int? selectedPickupId;
     int? selectedDropoffId;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2.5),
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              Text(
-                'Select Stops for ${route['route_name']}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              
-              const SizedBox(height: 8),
-              
-              Text(
-                'Choose your pickup and dropoff stops along this route',
-                style: TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 14,
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Selected stops display
-              if (selectedPickupId != null || selectedDropoffId != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (selectedPickupId != null)
-                        Row(
-                          children: [
-                            const Icon(Icons.circle, color: Colors.green, size: 12),
-                            const SizedBox(width: 8),
-                            Text('From: ${routeStops.firstWhere((s) => s['id'] == selectedPickupId)['name']}'),
-                          ],
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: Text('Select Pickup & Drop-off Stops'),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    height: 400,
+                    child: Column(
+                      children: [
+                        Text(
+                          'Route: ${route['route_name'] ?? 'Unknown Route'}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      if (selectedPickupId != null && selectedDropoffId != null)
-                        const SizedBox(height: 4),
-                      if (selectedDropoffId != null)
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, color: Colors.red, size: 12),
-                            const SizedBox(width: 8),
-                            Text('To: ${routeStops.firstWhere((s) => s['id'] == selectedDropoffId)['name']}'),
-                          ],
+                        SizedBox(height: 16),
+                        Text('Available Stops: ${routeStops.length}'),
+                        SizedBox(height: 8),
+                        Text(
+                          'Pickup Stop:',
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
-                    ],
-                  ),
-                ),
-              
-              const SizedBox(height: 16),
-              
-              // Stops list
-              Expanded(
-                child: ListView.builder(
-                  itemCount: routeStops.length,
-                  itemBuilder: (context, index) {
-                    final stop = routeStops[index];
-                    final isPickupSelected = selectedPickupId == stop['id'];
-                    final isDropoffSelected = selectedDropoffId == stop['id'];
-                    final isSelected = isPickupSelected || isDropoffSelected;
-                    
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isPickupSelected 
-                            ? Colors.green 
-                            : isDropoffSelected 
-                                ? Colors.red 
-                                : Colors.grey.shade300,
-                        child: Icon(
-                          isPickupSelected 
-                              ? Icons.circle 
-                              : isDropoffSelected 
-                                  ? Icons.location_on 
-                                  : Icons.place,
-                          color: isSelected ? Colors.white : Colors.grey.shade600,
-                          size: 20,
+                        SizedBox(height: 8),
+                        Container(
+                          height: 150,
+                          child: ListView.builder(
+                            itemCount: routeStops.length,
+                            itemBuilder: (context, index) {
+                              final stop = routeStops[index];
+                              final isSelected =
+                                  selectedPickupId == stop['stop_id'];
+
+                              // Debug: Print each stop being rendered
+                              print(
+                                '🏪 Rendering stop $index: ${stop['stop_name']} (ID: ${stop['stop_id']})',
+                              );
+
+                              return ListTile(
+                                title: Text(
+                                  stop['stop_name'] ?? 'Unknown Stop #$index',
+                                ),
+                                subtitle: Text(
+                                  'Order: ${stop['stop_order'] ?? index + 1}',
+                                ),
+                                leading: Icon(
+                                  stop['is_major'] == true
+                                      ? Icons.location_city
+                                      : Icons.location_on,
+                                  color:
+                                      stop['is_major'] == true
+                                          ? Colors.orange
+                                          : Colors.blue,
+                                ),
+                                trailing: Radio<int>(
+                                  value: stop['stop_id'] ?? index,
+                                  groupValue: selectedPickupId,
+                                  onChanged: (value) {
+                                    print('🎯 Selected pickup stop: $value');
+                                    setDialogState(() {
+                                      selectedPickupId = value;
+                                    });
+                                  },
+                                ),
+                                selected: isSelected,
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedPickupId = stop['stop_id'] ?? index;
+                                  });
+                                },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      title: Text(
-                        stop['name'] as String,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        SizedBox(height: 16),
+                        Text(
+                          'Drop-off Stop:',
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
-                      ),
-                      subtitle: Text(stop['is_major'] as bool ? 'Major Terminal' : 'Regular Stop'),
-                      trailing: isSelected 
-                          ? Icon(
-                              Icons.check_circle,
-                              color: isPickupSelected ? Colors.green : Colors.red,
-                            )
-                          : null,
-                      onTap: () {
-                        setModalState(() {
-                          if (selectedPickupId == null) {
-                            selectedPickupId = stop['id'] as int;
-                          } else if (selectedDropoffId == null && stop['id'] != selectedPickupId) {
-                            selectedDropoffId = stop['id'] as int;
-                          } else {
-                            // Reset selection
-                            selectedPickupId = stop['id'] as int;
-                            selectedDropoffId = null;
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: CustomButton(
-                      text: 'View Trips',
-                      onPressed: selectedPickupId != null && selectedDropoffId != null
-                          ? () {
-                              Navigator.pop(context);
-                              
-                              final pickupStop = routeStops.firstWhere((s) => s['id'] == selectedPickupId);
-                              final dropoffStop = routeStops.firstWhere((s) => s['id'] == selectedDropoffId);
-                              
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => TripSelectionPage(
-                                    routeId: route['id'] as int,
-                                    routeName: route['route_name'] as String,
-                                    from: pickupStop['name'] as String,
-                                    to: dropoffStop['name'] as String,
-                                    pickupStopId: selectedPickupId!,    // ✅ Now provided
-                                    dropoffStopId: selectedDropoffId!,  // ✅ Now provided
+                        SizedBox(height: 8),
+                        Container(
+                          height: 150,
+                          child: ListView.builder(
+                            itemCount: routeStops.length,
+                            itemBuilder: (context, index) {
+                              final stop = routeStops[index];
+                              final isSelected =
+                                  selectedDropoffId == stop['stop_id'];
+                              final isDisabled =
+                                  selectedPickupId != null &&
+                                  (stop['stop_order'] ?? index + 1) <=
+                                      (routeStops.firstWhere(
+                                            (s) =>
+                                                s['stop_id'] ==
+                                                selectedPickupId,
+                                            orElse: () => {'stop_order': 0},
+                                          )['stop_order'] ??
+                                          0);
+
+                              return ListTile(
+                                title: Text(
+                                  stop['stop_name'] ?? 'Unknown Stop #$index',
+                                  style: TextStyle(
+                                    color: isDisabled ? Colors.grey : null,
                                   ),
                                 ),
+                                subtitle: Text(
+                                  'Order: ${stop['stop_order'] ?? index + 1}',
+                                ),
+                                leading: Icon(
+                                  stop['is_major'] == true
+                                      ? Icons.location_city
+                                      : Icons.location_on,
+                                  color:
+                                      isDisabled
+                                          ? Colors.grey
+                                          : stop['is_major'] == true
+                                          ? Colors.orange
+                                          : Colors.blue,
+                                ),
+                                trailing: Radio<int>(
+                                  value: stop['stop_id'] ?? index,
+                                  groupValue: selectedDropoffId,
+                                  onChanged:
+                                      isDisabled
+                                          ? null
+                                          : (value) {
+                                            print(
+                                              '🎯 Selected dropoff stop: $value',
+                                            );
+                                            setDialogState(() {
+                                              selectedDropoffId = value;
+                                            });
+                                          },
+                                ),
+                                selected: isSelected,
+                                enabled: !isDisabled,
+                                onTap:
+                                    isDisabled
+                                        ? null
+                                        : () {
+                                          setDialogState(() {
+                                            selectedDropoffId =
+                                                stop['stop_id'] ?? index;
+                                          });
+                                        },
                               );
-                            }
-                          : null,
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ],
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed:
+                          selectedPickupId != null && selectedDropoffId != null
+                              ? () {
+                                Navigator.pop(context);
+
+                                // Get stop names for display
+                                final pickupStop = routeStops.firstWhere(
+                                  (stop) => stop['stop_id'] == selectedPickupId,
+                                  orElse: () => {'stop_name': 'Unknown Pickup'},
+                                );
+                                final dropoffStop = routeStops.firstWhere(
+                                  (stop) =>
+                                      stop['stop_id'] == selectedDropoffId,
+                                  orElse:
+                                      () => {'stop_name': 'Unknown Dropoff'},
+                                );
+
+                                print('🚀 Navigating to trip selection:');
+                                print(
+                                  '   Pickup: ${pickupStop['stop_name']} (ID: $selectedPickupId)',
+                                );
+                                print(
+                                  '   Dropoff: ${dropoffStop['stop_name']} (ID: $selectedDropoffId)',
+                                );
+
+                                // Navigate to trip selection with selected stops
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => TripSelectionPage(
+                                          routeId: route['route_id'],
+                                          routeName:
+                                              route['route_name'] ??
+                                              'Unknown Route',
+                                          from:
+                                              pickupStop['stop_name'] ??
+                                              'Unknown',
+                                          to:
+                                              dropoffStop['stop_name'] ??
+                                              'Unknown',
+                                          pickupStopId: selectedPickupId!,
+                                          dropoffStopId: selectedDropoffId!,
+                                        ),
+                                  ),
+                                );
+                              }
+                              : null,
+                      child: Text('Continue'),
+                    ),
+                  ],
+                ),
           ),
-        ),
-      ),
     );
   }
 
@@ -267,293 +386,144 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Find Route'),
+        title: const Text('Search Routes'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          // Search form
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // From field
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.circle_outlined,
-                        color: Colors.green,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomInput(
-                        hint: 'From where?',
-                        controller: _fromController,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Connecting line
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 32,
-                      child: Center(
-                        child: Container(
-                          width: 1,
-                          height: 24,
-                          color: Colors.grey.shade300,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        child: const Divider(),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // To field
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.location_on_outlined,
-                        color: Colors.red,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomInput(
-                        hint: 'To where?',
-                        controller: _toController,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Search button
-                CustomButton(
-                  text: 'Find Routes',
-                  onPressed: _searchRoutes,
-                  isLoading: _isSearching,
-                  icon: Icons.search,
-                ),
-
-                const SizedBox(height: 8),
-
-                // Use current location button
-                TextButton.icon(
-                  onPressed: () {
-                    // Set current location as pickup
-                    setState(() {
-                      _fromController.text = 'Current Location';
-                    });
-                  },
-                  icon: Icon(
-                    Icons.my_location,
-                    size: 16,
-                    color: AppTheme.primaryColor,
-                  ),
-                  label: Text(
-                    'Use my current location',
-                    style: TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Results
-          Expanded(
-            child:
-                _isSearching
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Searching for routes...',
-                            style: TextStyle(
-                              color: AppTheme.textSecondaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : _showResults
-                    ? _buildSearchResults()
-                    : _buildEmptyState(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Lottie.asset(
-              'assets/animations/route_search.json',
-              width: 200,
-              height: 200,
-              repeat: true,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Find Your Route',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryColor,
+            // Search Form
+            Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    CustomInput(
+                      controller: _fromController,
+                      label: 'From',
+                      hint: 'Enter pickup location',
+                      prefix: Icon(Icons.my_location),
+                    ),
+                    const SizedBox(height: 16),
+                    CustomInput(
+                      controller: _toController,
+                      label: 'To',
+                      hint: 'Enter destination',
+                      prefix: Icon(Icons.location_on),
+                    ),
+                    const SizedBox(height: 20),
+                    CustomButton(
+                      text: 'Search Routes',
+                      onPressed: _isSearching ? null : _searchRoutes,
+                      isLoading: _isSearching,
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Enter your pickup and destination locations to find available routes',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.textSecondaryColor,
-              ),
+
+            const SizedBox(height: 20),
+
+            // Results Section
+            Expanded(
+              child:
+                  _isSearching
+                      ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Searching for routes...'),
+                          ],
+                        ),
+                      )
+                      : _showResults
+                      ? _searchResults.isNotEmpty
+                          ? ListView.builder(
+                            itemCount: _searchResults.length,
+                            itemBuilder: (context, index) {
+                              final route = _searchResults[index];
+
+                              return RouteSelectionResult(
+                                id: route['route_id'] ?? 0,
+                                routeName:
+                                    route['route_name'] ?? 'Unknown Route',
+                                startPoint: route['start_point'] ?? 'Unknown',
+                                endPoint: route['end_point'] ?? 'Unknown',
+                                stops:
+                                    0, // You might want to fetch this separately or include in search results
+                                distanceKm:
+                                    (route['distance'] ?? 0.0).toDouble(),
+                                estimatedTime: route['estimated_duration'] ?? 0,
+                                fare: (route['base_fare'] ?? 0.0).toDouble(),
+                                availableTrips:
+                                    0, // You might want to fetch this separately
+                                onViewTrips:
+                                    () => _navigateToTripSelection(route),
+                              );
+                            },
+                          )
+                          : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No routes found',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Try different locations',
+                                  style: TextStyle(color: Colors.grey[500]),
+                                ),
+                              ],
+                            ),
+                          )
+                      : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Lottie.asset(
+                              'assets/animations/search.json',
+                              width: 200,
+                              height: 200,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Find Your Route',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Enter your pickup and destination to find available daladala routes',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSearchResults() {
-    // Sample route results
-    final results = [
-      {
-        'id': 1,
-        'route_name': 'R001: Mbezi - CBD',
-        'start_point': 'Mbezi Mwisho',
-        'end_point': 'Posta CBD',
-        'stops': 4,
-        'distance_km': 18.5,
-        'estimated_time': 45,
-        'fare': 1500.0,
-        'available_trips': 4,
-      },
-      {
-        'id': 2,
-        'route_name': 'R002: Kimara - CBD',
-        'start_point': 'Kimara Mwisho',
-        'end_point': 'Posta CBD',
-        'stops': 4,
-        'distance_km': 15.2,
-        'estimated_time': 40,
-        'fare': 1500.0,
-        'available_trips': 3,
-      },
-      {
-        'id': 3,
-        'route_name': 'R003: Tegeta - CBD',
-        'start_point': 'Tegeta Mwisho',
-        'end_point': 'Posta CBD',
-        'stops': 5,
-        'distance_km': 22.8,
-        'estimated_time': 55,
-        'fare': 2000.0,
-        'available_trips': 2,
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Available Routes (${results.length})',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
-                ),
-              ),
-              Text(
-                'From ${_fromController.text} to ${_toController.text}',
-                style: TextStyle(fontSize: 14, color: AppTheme.textSecondaryColor),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: results.length,
-            itemBuilder: (context, index) {
-              final route = results[index];
-              return RouteSelectionResult(
-                id: route['id'] as int,
-                routeName: route['route_name'] as String,
-                startPoint: route['start_point'] as String,
-                endPoint: route['end_point'] as String,
-                stops: route['stops'] as int,
-                distanceKm: route['distance_km'] as double,
-                estimatedTime: route['estimated_time'] as int,
-                fare: route['fare'] as double,
-                availableTrips: route['available_trips'] as int,
-                onViewTrips: () => _navigateToTripSelection(route), // ✅ Now shows stop selection first
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
 }
