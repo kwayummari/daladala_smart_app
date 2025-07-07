@@ -283,13 +283,63 @@ class ApiService {
         body: json.encode(data),
       );
 
-      print(response);
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         return json.decode(response.body);
       } else {
-        print('kwayu==============');
         throw Exception('Failed to create booking');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getAvailableTrips({
+    String? from,
+    String? to,
+    DateTime? date,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (from != null) 'from': from,
+        if (to != null) 'to': to,
+        if (date != null) 'date': date.toIso8601String().split('T')[0],
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/trips/upcoming',
+      ).replace(queryParameters: queryParams);
+      print('Fetching available trips from: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load available trips');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  /// Get trip details by ID
+  Future<Map<String, dynamic>> getTripDetails(int tripId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/trips/$tripId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load trip details');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -574,23 +624,6 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> getTripDetails(int tripId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/trips/$tripId'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Failed to load trip details');
-      }
-    } catch (e) {
-      throw Exception('Network error: $e');
-    }
-  }
 
   // Notifications Methods
   Future<Map<String, dynamic>> getNotifications({

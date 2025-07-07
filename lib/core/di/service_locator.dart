@@ -241,8 +241,6 @@ Future<void> setupServiceLocator() async {
 
   getIt.registerFactory<TripProvider>(
     () => TripProvider(
-      getUpcomingTripsUseCase: getIt<GetUpcomingTripsUseCase>(),
-      getTripDetailsUseCase: getIt<GetTripDetailsUseCase>(),
     ),
   );
   

@@ -44,7 +44,7 @@ class _TripsPageState extends State<TripsPage>
 
   Future<void> _refreshTrips() async {
     final tripProvider = Provider.of<TripProvider>(context, listen: false);
-    await tripProvider.getUpcomingTrips();
+    await tripProvider.refreshTrips();
   }
 
   @override
@@ -96,7 +96,8 @@ class _TripsPageState extends State<TripsPage>
                   );
                 }
 
-                final trips = tripProvider.upcomingTrips;
+                // Get trips based on selected filter
+                final trips = tripProvider.getTripsByFilter(_selectedFilter);
 
                 if (trips.isEmpty) {
                   return EmptyState(
@@ -149,7 +150,6 @@ class _TripsPageState extends State<TripsPage>
           setState(() {
             _selectedFilter = filter;
           });
-          // TODO: Apply filter to trips
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -248,7 +248,7 @@ class _TripCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      trip.routeName ?? 'Trip #${trip.id}',
+                      trip.displayRouteName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -325,20 +325,18 @@ class _TripCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (trip.vehiclePlate != null)
-                          Text(
-                            trip.vehiclePlate!,
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
+                        Text(
+                          trip.displayVehiclePlate,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 4),
-                        if (trip.driverName != null)
-                          Text(
-                            trip.driverName!,
-                            style: TextStyle(
-                              color: AppTheme.textSecondaryColor,
-                              fontSize: 14,
-                            ),
+                        Text(
+                          trip.displayDriverName,
+                          style: TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 14,
                           ),
+                        ),
                       ],
                     ),
                   ),
