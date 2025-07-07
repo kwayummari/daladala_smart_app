@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/constants.dart';
@@ -63,18 +65,50 @@ class PaymentDataSourceImpl implements PaymentDataSource {
         data['payment_details'] = paymentDetails;
       }
 
+      print('📤 Sending payment request: $data');
+
       final response = await dioClient.post(
         AppConstants.paymentsEndpoint,
         data: data,
       );
 
+      print('📥 Payment response: $response');
+
       if (response['status'] == 'success') {
-        return PaymentModel.fromJson(response['data']);
+        // Get user ID from authentication context (you might need to get this from storage)
+        // For now, we'll use a placeholder - you should get this from your auth service
+        final userId = await _getCurrentUserId();
+
+        // Use the special factory method for payment initiation responses
+        return PaymentModel.fromPaymentInitiationResponse(
+          response['data'],
+          bookingId: bookingId,
+          userId: userId,
+        );
       } else {
         throw ServerException(message: response['message']);
       }
     } catch (e) {
+      print('❌ Payment processing error: $e');
       rethrow;
+    }
+  }
+
+  Future<int> _getCurrentUserId() async {
+    try {
+
+      // Method 2: From SharedPreferences (Alternative)
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      if (userId != null) {
+        return userId;
+      }
+
+      // Fallback
+      return 0;
+    } catch (e) {
+      print('Error getting current user ID: $e');
+      return 0;
     }
   }
 
@@ -89,7 +123,9 @@ class PaymentDataSourceImpl implements PaymentDataSource {
         final List<dynamic> paymentsData =
             response['data']['payments'] ?? response['data'];
         return paymentsData
-            .map((payment) => PaymentModel.fromJson(payment))
+            .map(
+              (payment) => PaymentModel.fromJson(payment),
+            ) // ✅ Original method
             .toList();
       } else {
         throw ServerException(message: response['message']);
@@ -107,7 +143,7 @@ class PaymentDataSourceImpl implements PaymentDataSource {
       );
 
       if (response['status'] == 'success') {
-        return PaymentModel.fromJson(response['data']);
+        return PaymentModel.fromJson(response['data']); // ✅ Original method
       } else {
         throw ServerException(message: response['message']);
       }
@@ -124,7 +160,7 @@ class PaymentDataSourceImpl implements PaymentDataSource {
       );
 
       if (response['status'] == 'success') {
-        return PaymentModel.fromJson(response['data']);
+        return PaymentModel.fromJson(response['data']); // ✅ Original method
       } else {
         throw ServerException(message: response['message']);
       }

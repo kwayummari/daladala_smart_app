@@ -1,6 +1,7 @@
 // lib/features/bookings/presentation/pages/booking_confirmation_page.dart
 import 'package:daladala_smart_app/features/bookings/presentation/providers/booking_provider.dart';
 import 'package:daladala_smart_app/features/home/presentation/pages/home_page.dart';
+import 'package:daladala_smart_app/features/payments/presentation/pages/payment_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -172,9 +173,9 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
       );
 
       final success = await bookingProvider.createBooking(
-        tripId: widget.tripId,
-        pickupStopId: widget.pickupStopId,
-        dropoffStopId: widget.dropoffStopId,
+        tripId: widget.tripId, // Use widget.tripId
+        pickupStopId: widget.pickupStopId, // Use widget.pickupStopId
+        dropoffStopId: widget.dropoffStopId, // Use widget.dropoffStopId
         passengerCount: _passengerCount,
       );
 
@@ -201,50 +202,170 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
     }
   }
 
+  // lib/features/bookings/presentation/pages/booking_confirmation_page.dart - CORRECTED VERSION
+
   Future<void> _processPayment(int bookingId) async {
+    if (bookingId <= 0) {
+      throw Exception('Invalid booking ID: $bookingId');
+    }
+
     final paymentProvider = Provider.of<PaymentProvider>(
       context,
       listen: false,
     );
 
-    bool success = false;
+    try {
+      bool success = false;
 
-    if (_selectedPaymentMethod == 'wallet') {
-      success = await paymentProvider.processWalletPayment(
-        bookingId,
-        amount: _totalFare,
+      if (_selectedPaymentMethod == 'wallet') {
+        success = await paymentProvider.processWalletPayment(
+          bookingId,
+          amount: _totalFare,
+        );
+      } else if (_selectedPaymentMethod == 'mobile_money') {
+        success = await paymentProvider.processMobileMoneyPayment(
+          bookingId: bookingId,
+          phoneNumber: _phoneController.text.trim(),
+          amount: _totalFare,
+        );
+      }
+
+      if (success) {
+        final payment = paymentProvider.currentPayment;
+
+        if (payment != null) {
+          _handlePaymentSuccess(bookingId, payment);
+        } else {
+          // Payment was successful but no payment object returned
+          _navigateToSuccess(bookingId);
+        }
+      } else {
+        throw Exception(paymentProvider.error ?? 'Payment processing failed');
+      }
+    } catch (e) {
+      throw Exception('Payment failed: ${e.toString()}');
+    }
+  }
+
+  void _handlePaymentSuccess(int bookingId, dynamic payment) {
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment successful! Booking #$bookingId confirmed.'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    if (payment.isMobileMoneyPayment && payment.isPending) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Payment Ussd generated successful! Booking #$bookingId confirmed.',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
       );
+
+      _navigateToSuccess(bookingId);
     } else {
-      success = await paymentProvider.processMobileMoneyPayment(
-        bookingId: bookingId,
-        phoneNumber: _phoneController.text.trim(),
-        amount: _totalFare,
+      _navigateToSuccess(bookingId);
+    }
+  }
+
+  // Navigate to success page
+  void _navigateToSuccess(int bookingId) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => HomePage()),
+      (route) => false,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      HomePage.navigateToTab(3); // Bookings tab
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 30),
+                  SizedBox(width: 10),
+                  Text('Booking Confirmed!'),
+                ],
+              ),
+              content: Text(
+                'Your booking #$bookingId has been confirmed! '
+                'You can view details in the Bookings tab.',
+                style: TextStyle(fontSize: 15),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
       );
+    });
+  }
+
+  // Helper methods
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  bool _validatePhoneNumber() {
+    final phoneNumber = _phoneController.text.trim();
+    if (phoneNumber.isEmpty) {
+      _showError('Please enter your phone number');
+      return false;
     }
 
-    if (mounted) {
-      if (success) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment successful! Booking #$bookingId confirmed.'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+    // Basic Tanzanian phone number validation
+    if (!RegExp(
+      r'^(0|255)?7\d{8}$',
+    ).hasMatch(phoneNumber.replaceAll(RegExp(r'[\s\-\+]'), ''))) {
+      _showError('Please enter a valid Tanzanian phone number');
+      return false;
+    }
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => HomePage()),
-          (route) => false, // Clear navigation stack
-        );
+    return true;
+  }
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          HomePage.navigateToTab(3); // Bookings tab index
-        });
+  Future<int?> _createBookingAndGetId() async {
+    try {
+      final bookingProvider = Provider.of<BookingProvider>(
+        context,
+        listen: false,
+      );
+
+      final success = await bookingProvider.createBooking(
+        tripId: widget.tripId,
+        pickupStopId: widget.pickupStopId,
+        dropoffStopId: widget.dropoffStopId,
+        passengerCount: _passengerCount,
+      );
+
+      if (success && bookingProvider.currentBooking != null) {
+        final booking = bookingProvider.currentBooking!;
+        return booking.id;
       } else {
-        throw Exception(paymentProvider.error ?? 'Payment failed');
+        final errorMessage =
+            bookingProvider.error ?? 'Unknown booking creation error';
+        throw Exception(errorMessage);
       }
+    } catch (e) {
+      throw Exception('Failed to create booking: ${e.toString()}');
     }
   }
 

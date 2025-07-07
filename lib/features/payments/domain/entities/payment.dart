@@ -198,6 +198,17 @@ class ZenoPayData extends Equatable {
     this.msisdn,
   });
 
+  factory ZenoPayData.fromJson(Map<String, dynamic> json) {
+    return ZenoPayData(
+      orderId: json['order_id'] as String?,
+      reference: json['reference'] as String?,
+      message: json['message'] as String?,
+      instructions: json['instructions'] as String?,
+      channel: json['channel'] as String?,
+      msisdn: json['msisdn'] as String?,
+    );
+  }
+
   @override
   List<Object?> get props => [
     orderId,

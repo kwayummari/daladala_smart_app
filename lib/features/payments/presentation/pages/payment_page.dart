@@ -203,21 +203,39 @@ class _PaymentPageState extends State<PaymentPage> {
       Navigator.of(context).pop(); // Close processing dialog
 
       if (success) {
-        final payment = paymentProvider.currentPayment!;
+        final payment = paymentProvider.currentPayment;
 
-        if (payment.isMobileMoneyPayment && payment.isPending) {
-          // Show mobile money instructions dialog
-          await showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder:
-                (context) => MobileMoneyInstructionsDialog(
-                  payment: payment,
-                  onCheckStatus: () => _checkPaymentStatus(payment.id),
-                ),
+        if (payment != null) {
+          if (payment.isMobileMoneyPayment && payment.isPending) {
+            // Show mobile money instructions dialog
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder:
+                  (context) => MobileMoneyInstructionsDialog(
+                    payment: payment,
+                    onCheckStatus: () => _checkPaymentStatus(payment.id),
+                  ),
+            );
+          } else if (payment.isCompleted) {
+            _navigateToSuccess();
+          }
+        } else {
+          // Payment object is null, but success is true
+          // This could happen if the API returns success but the payment object isn't properly set
+          print('⚠️ Payment successful but payment object is null');
+
+          // Try to navigate anyway with available information
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/payment-success',
+            (route) => false,
+            arguments: {
+              'payment_id': null,
+              'booking_id': widget.bookingId,
+              'amount': widget.amount,
+              'payment_method': _selectedPaymentMethod,
+            },
           );
-        } else if (payment.isCompleted) {
-          _navigateToSuccess();
         }
       } else {
         throw Exception(paymentProvider.error ?? 'Payment failed');
@@ -230,6 +248,7 @@ class _PaymentPageState extends State<PaymentPage> {
       context,
       listen: false,
     );
+
     await paymentProvider.checkPaymentStatus(paymentId);
 
     final payment = paymentProvider.currentPayment;
@@ -238,20 +257,46 @@ class _PaymentPageState extends State<PaymentPage> {
         Navigator.of(context).pop(); // Close instructions dialog
         _navigateToSuccess();
       }
+    } else if (payment != null && payment.isFailed) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close instructions dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _navigateToSuccess() {
+    final paymentProvider = Provider.of<PaymentProvider>(
+      context,
+      listen: false,
+    );
+    final currentPayment = paymentProvider.currentPayment;
+
+    // Get booking_id from current payment if widget.bookingId is null
+    final bookingId = widget.bookingId ?? currentPayment?.bookingId;
+
+    if (bookingId == null) {
+      // If we still don't have a booking ID, show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Unable to retrieve booking information'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/payment-success',
       (route) => false,
       arguments: {
-        'payment_id':
-            Provider.of<PaymentProvider>(
-              context,
-              listen: false,
-            ).currentPayment?.id,
-        'booking_id': widget.bookingId,
+        'payment_id': currentPayment?.id,
+        'booking_id': bookingId, // Now guaranteed to have a value
         'amount': widget.amount,
         'payment_method': _selectedPaymentMethod,
       },

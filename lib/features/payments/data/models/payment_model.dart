@@ -83,8 +83,8 @@ class PaymentModel extends Payment {
               : null,
       zenoPayData:
           json['zenopay'] != null
-              ? ZenoPayDataModel.fromJson(json['zenopay']).toEntity()
-              : null,
+              ? ZenoPayData.fromJson(json['zenopay'])
+              : _createZenoPayDataFromResponse(json),
       refundAmount: _safeParseDouble(json['refund_amount']),
       refundTime:
           json['refund_time'] != null
@@ -92,54 +92,115 @@ class PaymentModel extends Payment {
               : null,
       commissionAmount: _safeParseDouble(json['commission_amount']),
       booking:
-          json['Booking'] != null || json['booking'] != null
-              ? BookingModel.fromJson(json['Booking'] ?? json['booking'])
+          json['booking'] != null
+              ? BookingModel.fromJson(json['booking'])
               : null,
     );
   }
 
-  // Helper method to safely parse integers
+  factory PaymentModel.fromPaymentInitiationResponse(
+    Map<String, dynamic> json, {
+    required int bookingId,
+    required int userId,
+  }) {
+    print('🔍 PaymentModel.fromPaymentInitiationResponse received: $json');
+    print('🔍 Using context: bookingId=$bookingId, userId=$userId');
+
+    final paymentId = _safeParseInt(json['payment_id'] ?? json['id']);
+
+    if (paymentId == null) {
+      throw FormatException(
+        'payment_id is required but was null or invalid: ${json['payment_id'] ?? json['id']}',
+      );
+    }
+
+    return PaymentModel(
+      id: paymentId,
+      bookingId: bookingId, // Use provided context
+      userId: userId, // Use provided context
+      amount: _safeParseDouble(json['amount']) ?? 0.0,
+      currency: json['currency']?.toString() ?? 'TZS',
+      paymentMethod: json['payment_method']?.toString() ?? '',
+      paymentProvider: json['payment_provider']?.toString(),
+      transactionId: json['transaction_id']?.toString(),
+      internalReference: json['internal_reference']?.toString(),
+      paymentTime:
+          json['payment_time'] != null
+              ? _safeParseDateTime(json['payment_time'])
+              : null,
+      initiatedTime:
+          json['initiated_time'] != null
+              ? _safeParseDateTime(json['initiated_time']) ?? DateTime.now()
+              : DateTime.now(),
+      status: json['status']?.toString() ?? 'pending',
+      failureReason: json['failure_reason']?.toString(),
+      paymentDetails:
+          json['payment_details'] != null
+              ? Map<String, dynamic>.from(json['payment_details'])
+              : null,
+      webhookData:
+          json['webhook_data'] != null
+              ? Map<String, dynamic>.from(json['webhook_data'])
+              : null,
+      zenoPayData:
+          json['zenopay'] != null
+              ? ZenoPayData.fromJson(json['zenopay'])
+              : _createZenoPayDataFromResponse(json),
+      refundAmount: _safeParseDouble(json['refund_amount']),
+      refundTime:
+          json['refund_time'] != null
+              ? _safeParseDateTime(json['refund_time'])
+              : null,
+      commissionAmount: _safeParseDouble(json['commission_amount']),
+      booking: null, // Payment initiation doesn't include booking details
+    );
+  }
+
+  static ZenoPayData? _createZenoPayDataFromResponse(
+    Map<String, dynamic> json,
+  ) {
+    // If this looks like a ZenoPay response, create ZenoPayData
+    if (json['external_reference'] != null ||
+        json['message'] != null ||
+        json['instructions'] != null) {
+      return ZenoPayData(
+        orderId: json['external_reference']?.toString(),
+        reference: json['external_reference']?.toString(),
+        message: json['message']?.toString(),
+        instructions: json['instructions']?.toString(),
+        channel: json['channel']?.toString(),
+        msisdn: json['msisdn']?.toString(),
+      );
+    }
+    return null;
+  }
+
+  // Safe parsing helper methods
   static int? _safeParseInt(dynamic value) {
     if (value == null) return null;
-
     if (value is int) return value;
+    if (value is String) return int.tryParse(value);
     if (value is double) return value.toInt();
-    if (value is String) {
-      return int.tryParse(value);
-    }
-
     return null;
   }
 
-  // Helper method to safely parse doubles
   static double? _safeParseDouble(dynamic value) {
     if (value == null) return null;
-
     if (value is double) return value;
     if (value is int) return value.toDouble();
-    if (value is String) {
-      return double.tryParse(value);
-    }
-
+    if (value is String) return double.tryParse(value);
     return null;
   }
 
-  // Helper method to safely parse DateTime
   static DateTime? _safeParseDateTime(dynamic value) {
     if (value == null) return null;
-
     if (value is DateTime) return value;
-    if (value is String) {
-      try {
-        return DateTime.parse(value);
-      } catch (e) {
-        print('⚠️ Failed to parse DateTime: $value');
-        return null;
-      }
-    }
-
+    if (value is String) return DateTime.tryParse(value);
     return null;
   }
+
+
+
 
   Map<String, dynamic> toJson() {
     return {
