@@ -1,13 +1,11 @@
 // lib/features/trips/presentation/providers/trip_provider.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../../core/utils/constants.dart';
 import '../../../../services/api_service.dart';
 import '../../../routes/domain/entities/transport_route.dart';
 import '../../domains/entities/trip.dart';
 
 class TripProvider extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
   List<Trip> _upcomingTrips = [];

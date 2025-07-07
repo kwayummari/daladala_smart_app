@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/ui/widgets/loading_indicator.dart';
 import '../../../../core/ui/widgets/error_view.dart';
 import '../../../../core/ui/widgets/custom_button.dart';
 import '../widgets/upcoming_departure_item.dart';
