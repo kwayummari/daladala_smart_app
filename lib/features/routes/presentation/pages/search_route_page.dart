@@ -1,3 +1,4 @@
+import 'package:daladala_smart_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -50,27 +51,16 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
     });
 
     try {
-      // Search for routes based on start and end points
-      final response = await http.get(
-        Uri.parse(
-          '${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/search?start_point=${_fromController.text}&end_point=${_toController.text}',
-        ),
-        headers: {'Content-Type': 'application/json'},
+      // Use the existing ApiService method
+      final results = await ApiService.searchRoutes(
+        startPoint: _fromController.text,
+        endPoint: _toController.text,
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          setState(() {
-            _searchResults = List<Map<String, dynamic>>.from(data['data']);
-            _showResults = true;
-          });
-        } else {
-          _showError(data['message'] ?? 'Failed to search routes');
-        }
-      } else {
-        _showError('Failed to connect to server');
-      }
+      setState(() {
+        _searchResults = results;
+        _showResults = true;
+      });
     } catch (e) {
       _showError('Network error: $e');
     } finally {
@@ -392,136 +382,139 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Search Form
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    CustomInput(
-                      controller: _fromController,
-                      label: 'From',
-                      hint: 'Enter pickup location',
-                      prefix: Icon(Icons.my_location),
-                    ),
-                    const SizedBox(height: 16),
-                    CustomInput(
-                      controller: _toController,
-                      label: 'To',
-                      hint: 'Enter destination',
-                      prefix: Icon(Icons.location_on),
-                    ),
-                    const SizedBox(height: 20),
-                    CustomButton(
-                      text: 'Search Routes',
-                      onPressed: _isSearching ? null : _searchRoutes,
-                      isLoading: _isSearching,
-                    ),
-                  ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Search Form
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      CustomInput(
+                        controller: _fromController,
+                        label: 'From',
+                        hint: 'Enter pickup location',
+                        prefix: Icon(Icons.my_location),
+                      ),
+                      const SizedBox(height: 16),
+                      CustomInput(
+                        controller: _toController,
+                        label: 'To',
+                        hint: 'Enter destination',
+                        prefix: Icon(Icons.location_on),
+                      ),
+                      const SizedBox(height: 20),
+                      CustomButton(
+                        text: 'Search Routes',
+                        onPressed: _isSearching ? null : _searchRoutes,
+                        isLoading: _isSearching,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // Results Section
-            Expanded(
-              child:
-                  _isSearching
-                      ? const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text('Searching for routes...'),
-                          ],
-                        ),
-                      )
-                      : _showResults
-                      ? _searchResults.isNotEmpty
-                          ? ListView.builder(
-                            itemCount: _searchResults.length,
-                            itemBuilder: (context, index) {
-                              final route = _searchResults[index];
+              // Results Section
+              Container(
+                child:
+                    _isSearching
+                        ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('Searching for routes...'),
+                            ],
+                          ),
+                        )
+                        : _showResults
+                        ? _searchResults.isNotEmpty
+                            ? ListView.builder(
+                              itemCount: _searchResults.length,
+                              itemBuilder: (context, index) {
+                                final route = _searchResults[index];
 
-                              return RouteSelectionResult(
-                                id: route['route_id'] ?? 0,
-                                routeName:
-                                    route['route_name'] ?? 'Unknown Route',
-                                startPoint: route['start_point'] ?? 'Unknown',
-                                endPoint: route['end_point'] ?? 'Unknown',
-                                stops:
-                                    0, // You might want to fetch this separately or include in search results
-                                distanceKm:
-                                    (route['distance'] ?? 0.0).toDouble(),
-                                estimatedTime: route['estimated_duration'] ?? 0,
-                                fare: (route['base_fare'] ?? 0.0).toDouble(),
-                                availableTrips:
-                                    0, // You might want to fetch this separately
-                                onViewTrips:
-                                    () => _navigateToTripSelection(route),
-                              );
-                            },
-                          )
-                          : Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.search_off,
-                                  size: 64,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No routes found',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey[600],
+                                return RouteSelectionResult(
+                                  id: route['route_id'] ?? 0,
+                                  routeName:
+                                      route['route_name'] ?? 'Unknown Route',
+                                  startPoint: route['start_point'] ?? 'Unknown',
+                                  endPoint: route['end_point'] ?? 'Unknown',
+                                  stops:
+                                      0, // You might want to fetch this separately or include in search results
+                                  distanceKm:
+                                      (route['distance'] ?? 0.0).toDouble(),
+                                  estimatedTime:
+                                      route['estimated_duration'] ?? 0,
+                                  fare: (route['base_fare'] ?? 0.0).toDouble(),
+                                  availableTrips:
+                                      0, // You might want to fetch this separately
+                                  onViewTrips:
+                                      () => _navigateToTripSelection(route),
+                                );
+                              },
+                            )
+                            : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.search_off,
+                                    size: 64,
+                                    color: Colors.grey[400],
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Try different locations',
-                                  style: TextStyle(color: Colors.grey[500]),
-                                ),
-                              ],
-                            ),
-                          )
-                      : Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Lottie.asset(
-                              'assets/animations/search.json',
-                              width: 200,
-                              height: 200,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Find Your Route',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[700],
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No routes found',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Try different locations',
+                                    style: TextStyle(color: Colors.grey[500]),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Enter your pickup and destination to find available daladala routes',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
+                            )
+                        : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Lottie.asset(
+                                'assets/animations/search.json',
+                                width: 200,
+                                height: 200,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Find Your Route',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Enter your pickup and destination to find available daladala routes',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
