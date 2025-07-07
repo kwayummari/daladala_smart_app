@@ -278,18 +278,7 @@ class _PaymentPageState extends State<PaymentPage> {
     final currentPayment = paymentProvider.currentPayment;
 
     // Get booking_id from current payment if widget.bookingId is null
-    final bookingId = widget.bookingId ?? currentPayment?.bookingId;
-
-    if (bookingId == null) {
-      // If we still don't have a booking ID, show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Unable to retrieve booking information'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    final bookingId = widget.bookingId;
 
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/payment-success',

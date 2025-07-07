@@ -1,7 +1,6 @@
 // lib/features/bookings/presentation/pages/booking_confirmation_page.dart
 import 'package:daladala_smart_app/features/bookings/presentation/providers/booking_provider.dart';
 import 'package:daladala_smart_app/features/home/presentation/pages/home_page.dart';
-import 'package:daladala_smart_app/features/payments/presentation/pages/payment_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -311,62 +310,6 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage>
             ),
       );
     });
-  }
-
-  // Helper methods
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 5),
-      ),
-    );
-  }
-
-  bool _validatePhoneNumber() {
-    final phoneNumber = _phoneController.text.trim();
-    if (phoneNumber.isEmpty) {
-      _showError('Please enter your phone number');
-      return false;
-    }
-
-    // Basic Tanzanian phone number validation
-    if (!RegExp(
-      r'^(0|255)?7\d{8}$',
-    ).hasMatch(phoneNumber.replaceAll(RegExp(r'[\s\-\+]'), ''))) {
-      _showError('Please enter a valid Tanzanian phone number');
-      return false;
-    }
-
-    return true;
-  }
-
-  Future<int?> _createBookingAndGetId() async {
-    try {
-      final bookingProvider = Provider.of<BookingProvider>(
-        context,
-        listen: false,
-      );
-
-      final success = await bookingProvider.createBooking(
-        tripId: widget.tripId,
-        pickupStopId: widget.pickupStopId,
-        dropoffStopId: widget.dropoffStopId,
-        passengerCount: _passengerCount,
-      );
-
-      if (success && bookingProvider.currentBooking != null) {
-        final booking = bookingProvider.currentBooking!;
-        return booking.id;
-      } else {
-        final errorMessage =
-            bookingProvider.error ?? 'Unknown booking creation error';
-        throw Exception(errorMessage);
-      }
-    } catch (e) {
-      throw Exception('Failed to create booking: ${e.toString()}');
-    }
   }
 
   @override
