@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/constants.dart';
 import '../../../bookings/presentation/pages/booking_confirmation_page.dart';
-import '../widgets/trip_item.dart';
 
 class TripSelectionPage extends StatefulWidget {
   final int routeId;
@@ -29,6 +27,8 @@ class TripSelectionPage extends StatefulWidget {
   State<TripSelectionPage> createState() => _TripSelectionPageState();
 }
 
+// Add this debug version to your TripSelectionPage
+
 class _TripSelectionPageState extends State<TripSelectionPage> {
   bool _isLoading = true;
   DateTime _selectedDate = DateTime.now();
@@ -39,79 +39,143 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
   @override
   void initState() {
     super.initState();
+    print('🏗️ TripSelectionPage initState called');
+    print('🏗️ Route ID: ${widget.routeId}');
+    print('🏗️ Pickup Stop ID: ${widget.pickupStopId}');
+    print('🏗️ Dropoff Stop ID: ${widget.dropoffStopId}');
+    print('🏗️ Route Name: ${widget.routeName}');
+    print('🏗️ From: ${widget.from}');
+    print('🏗️ To: ${widget.to}');
     _loadData();
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    print('📊 DEBUG: _loadData started');
 
     try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      print('📊 Set loading state to true');
+
       // Load fare information and trips concurrently
+      print('📊 About to load fare info and trips...');
       await Future.wait([_loadFareInfo(), _loadTrips()]);
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load data: $e';
-      });
+      print('📊 Finished loading fare info and trips');
+    } catch (e, stackTrace) {
+      print('❌ Error in _loadData: $e');
+      print('❌ Stack trace: $stackTrace');
+
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load data: $e';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      print('📊 Setting loading to false');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      print('📊 _loadData completed');
     }
   }
 
   Future<void> _loadFareInfo() async {
+    print('💰 DEBUG: _loadFareInfo started');
+
     try {
+      final url =
+          '${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/fare?route_id=${widget.routeId}&start_stop_id=${widget.pickupStopId}&end_stop_id=${widget.dropoffStopId}';
+      print('💰 Fare API URL: $url');
+
       final response = await http.get(
-        Uri.parse(
-          '${AppConstants.apiBaseUrl}${AppConstants.routesEndpoint}/fare?route_id=${widget.routeId}&start_stop_id=${widget.pickupStopId}&end_stop_id=${widget.dropoffStopId}',
-        ),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
+
+      print('💰 Fare API Response Status: ${response.statusCode}');
+      print('💰 Fare API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'success') {
-          setState(() {
-            _fareInfo = data['data'];
-          });
+          if (mounted) {
+            setState(() {
+              _fareInfo = data['data'];
+            });
+          }
+          print('💰 Fare info loaded successfully: $_fareInfo');
+        } else {
+          print('💰 Fare API returned error status: ${data['status']}');
+          print('💰 Fare API error message: ${data['message']}');
         }
+      } else {
+        print('💰 Fare API HTTP error: ${response.statusCode}');
       }
-    } catch (e) {
-      print('Error loading fare info: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error loading fare info: $e');
+      print('❌ Fare info stack trace: $stackTrace');
     }
   }
 
   Future<void> _loadTrips() async {
+    print('🚌 DEBUG: _loadTrips started');
+
     try {
       final dateString = _selectedDate.toIso8601String().split('T')[0];
+      final url =
+          '${AppConstants.apiBaseUrl}${AppConstants.tripsEndpoint}/route/${widget.routeId}?date=$dateString';
+      print('🚌 Trips API URL: $url');
+
       final response = await http.get(
-        Uri.parse(
-          '${AppConstants.apiBaseUrl}${AppConstants.tripsEndpoint}/route/${widget.routeId}?date=$dateString',
-        ),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
+
+      print('🚌 Trips API Response Status: ${response.statusCode}');
+      print('🚌 Trips API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'success') {
+          if (mounted) {
+            setState(() {
+              _trips = List<Map<String, dynamic>>.from(data['data']);
+            });
+          }
+          print('🚌 Trips loaded successfully: ${_trips.length} trips found');
+        } else {
+          print('🚌 Trips API returned error status: ${data['status']}');
+          print('🚌 Trips API error message: ${data['message']}');
+        }
+      } else {
+        print('🚌 Trips API HTTP error: ${response.statusCode}');
+        print('🚌 Using sample data as fallback');
+        if (mounted) {
           setState(() {
-            _trips = List<Map<String, dynamic>>.from(data['data']);
+            _trips = _getSampleTrips();
           });
         }
       }
-    } catch (e) {
-      print('Error loading trips: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error loading trips: $e');
+      print('❌ Trips stack trace: $stackTrace');
+      print('🚌 Using sample data as fallback');
+
       // Fallback to sample data for demo
-      setState(() {
-        _trips = _getSampleTrips();
-      });
+      if (mounted) {
+        setState(() {
+          _trips = _getSampleTrips();
+        });
+      }
     }
   }
 
   List<Map<String, dynamic>> _getSampleTrips() {
+    print('📝 Using sample trips data');
     return [
       {
         'trip_id': 1,
@@ -151,204 +215,80 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
         'available_seats': 12,
         'status': 'scheduled',
       },
-      {
-        'trip_id': 3,
-        'start_time':
-            DateTime.now().add(const Duration(hours: 2)).toIso8601String(),
-        'Vehicle': {
-          'vehicle_type': 'daladala',
-          'plate_number': 'T789GHI',
-          'capacity': 14,
-          'is_air_conditioned': true,
-        },
-        'Driver': {
-          'rating': 4.85,
-          'total_ratings': 200,
-          'User': {'first_name': 'Grace', 'last_name': 'Kimani'},
-        },
-        'available_seats': 6,
-        'status': 'scheduled',
-      },
     ];
-  }
-
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 7)),
-    );
-
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _isLoading = true;
-      });
-      await _loadTrips();
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _bookTrip(Map<String, dynamic> trip) {
-    final vehicle = trip['Vehicle'] ?? {};
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => BookingConfirmationPage(
-              tripId: trip['trip_id'] ?? 0,
-              routeName: widget.routeName,
-              from: widget.from,
-              to: widget.to,
-              startTime:
-                  DateTime.tryParse(trip['start_time'] ?? '') ?? DateTime.now(),
-              fare: _fareInfo?['amount']?.toDouble() ?? 1500.0,
-              vehiclePlate: vehicle['plate_number'] ?? 'Unknown',
-              pickupStopId: widget.pickupStopId,
-              dropoffStopId: widget.dropoffStopId,
-            ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    print('🎨 TripSelectionPage build called');
+    print('🎨 Loading: $_isLoading, Error: $_error, Trips: ${_trips.length}');
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Trip'),
+        title: Text(widget.routeName),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
-          // Route Info Card
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.routeName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.my_location,
-                        color: Colors.green,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(widget.from)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(widget.to)),
-                    ],
-                  ),
-                  if (_fareInfo != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.attach_money,
-                          color: Colors.blue,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Fare: ${_fareInfo!['amount']} ${_fareInfo!['currency'] ?? 'TZS'}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        if (_fareInfo!['is_estimated'] == true) ...[
-                          const SizedBox(width: 8),
-                          const Text(
-                            '(Estimated)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+          // Route info header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              border: Border(bottom: BorderSide(color: Colors.blue[200]!)),
             ),
-          ),
-
-          // Date Selection
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Card(
-                    child: InkWell(
-                      onTap: _selectDate,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Travel Date',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                Text(
-                                  _selectedDate.formattedDate,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            const Icon(Icons.keyboard_arrow_down),
-                          ],
-                        ),
-                      ),
-                    ),
+                Text(
+                  '${widget.from} → ${widget.to}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.routeName,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+                if (_fareInfo != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Fare: ${_fareInfo!['amount']?.toString() ?? 'N/A'} TZS',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          // Date selection
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Date: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const Spacer(),
+                TextButton(onPressed: _selectDate, child: const Text('Change')),
+              ],
+            ),
+          ),
 
-          // Trips List
+          const Divider(),
+
+          // Content area
           Expanded(
             child:
                 _isLoading
@@ -420,39 +360,83 @@ class _TripSelectionPageState extends State<TripSelectionPage> {
                       itemCount: _trips.length,
                       itemBuilder: (context, index) {
                         final trip = _trips[index];
+                        print(
+                          '🎨 Building trip item $index: ${trip['trip_id']}',
+                        );
 
-                        // Extract trip data with null safety
-                        final vehicle = trip['Vehicle'] ?? {};
-                        final driver = trip['Driver'] ?? {};
-                        final driverUser = driver['User'] ?? {};
-
-                        // Build features list
-                        List<String> features = [];
-                        if (vehicle['is_air_conditioned'] == true) {
-                          features.add('AC');
-                        }
-                        // Add more features as available in your data
-
-                        return TripItem(
-                          id: trip['trip_id'] ?? 0,
-                          startTime:
-                              DateTime.tryParse(trip['start_time'] ?? '') ??
-                              DateTime.now(),
-                          vehicleType: vehicle['vehicle_type'] ?? 'daladala',
-                          vehiclePlate: vehicle['plate_number'] ?? 'Unknown',
-                          driverName:
-                              '${driverUser['first_name'] ?? ''} ${driverUser['last_name'] ?? ''}'
-                                  .trim(),
-                          driverRating: (driver['rating'] ?? 0.0).toDouble(),
-                          availableSeats: trip['available_seats'] ?? 0,
-                          fare: _fareInfo?['amount']?.toDouble() ?? 1500.0,
-                          features: features,
-                          onSelectTrip: () => _bookTrip(trip),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            title: Text('Trip ${trip['trip_id']}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Vehicle: ${trip['Vehicle']?['plate_number'] ?? 'N/A'}',
+                                ),
+                                Text(
+                                  'Departure: ${trip['start_time'] ?? 'N/A'}',
+                                ),
+                                Text(
+                                  'Available Seats: ${trip['available_seats'] ?? 'N/A'}',
+                                ),
+                              ],
+                            ),
+                            trailing: ElevatedButton(
+                              onPressed: () => _bookTrip(trip),
+                              child: const Text('Book'),
+                            ),
+                          ),
                         );
                       },
                     ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 7)),
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _isLoading = true;
+      });
+      await _loadTrips();
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _bookTrip(Map<String, dynamic> trip) {
+    print('📖 Booking trip: ${trip['trip_id']}');
+
+    final vehicle = trip['Vehicle'] ?? {};
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => BookingConfirmationPage(
+              tripId: trip['trip_id'] ?? 0,
+              routeName: widget.routeName,
+              from: widget.from,
+              to: widget.to,
+              startTime:
+                  DateTime.tryParse(trip['start_time'] ?? '') ?? DateTime.now(),
+              fare: _fareInfo?['amount']?.toDouble() ?? 1500.0,
+              vehiclePlate: vehicle['plate_number'] ?? 'Unknown',
+              pickupStopId: widget.pickupStopId,
+              dropoffStopId: widget.dropoffStopId,
+            ),
       ),
     );
   }

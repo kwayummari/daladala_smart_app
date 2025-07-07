@@ -1,3 +1,6 @@
+import 'package:daladala_smart_app/features/routes/data/models/stop_model.dart';
+import 'package:daladala_smart_app/features/routes/domain/entities/stop.dart';
+import 'package:daladala_smart_app/features/routes/presentation/widgets/modern_stop_selection_sheet.dart';
 import 'package:daladala_smart_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -11,7 +14,21 @@ import '../widgets/route_selection_result.dart';
 import '../../../trips/presentation/pages/trip_selection_page.dart';
 
 class SearchRoutePage extends StatefulWidget {
-  const SearchRoutePage({Key? key}) : super(key: key);
+  // Add optional parameters for preselected values
+  final String? preselectedFrom;
+  final String? preselectedTo;
+  final int? pickupStopId;
+  final int? dropoffStopId;
+  final int? routeId;
+
+  const SearchRoutePage({
+    Key? key,
+    this.preselectedFrom,
+    this.preselectedTo,
+    this.pickupStopId,
+    this.dropoffStopId,
+    this.routeId,
+  }) : super(key: key);
 
   @override
   State<SearchRoutePage> createState() => _SearchRoutePageState();
@@ -24,6 +41,26 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
   bool _isSearching = false;
   bool _showResults = false;
   List<Map<String, dynamic>> _searchResults = [];
+
+   @override
+  void initState() {
+    super.initState();
+
+    // Pre-fill the text fields if values are provided
+    if (widget.preselectedFrom != null) {
+      _fromController.text = widget.preselectedFrom!;
+    }
+    if (widget.preselectedTo != null) {
+      _toController.text = widget.preselectedTo!;
+    }
+
+    // Automatically search if both fields are pre-filled
+    if (widget.preselectedFrom != null && widget.preselectedTo != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _searchRoutes();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -124,8 +161,6 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
 
   // Also update the _showStopSelectionDialog method to handle empty stops better
   void _showStopSelectionDialog(Map<String, dynamic> route) async {
-    print('🎯 Starting stop selection for route: ${route['route_id']}');
-
     // Show loading dialog first
     showDialog(
       context: context,
@@ -134,241 +169,57 @@ class _SearchRoutePageState extends State<SearchRoutePage> {
     );
 
     // Fetch stops for the route
-    final routeStops = await _fetchRouteStops(route['route_id']);
-
-    print(
-      '📍 Fetched ${routeStops.length} stops for route ${route['route_id']}',
-    );
+    final routeStopsData = await _fetchRouteStops(route['route_id']);
 
     // Close loading dialog
     Navigator.pop(context);
 
-    if (routeStops.isEmpty) {
-      print('⚠️ No stops found for route ${route['route_id']}');
+    if (routeStopsData.isEmpty) {
       _showError('No stops found for this route. Please try another route.');
       return;
     }
 
-    // Debug: Print first stop to see data structure
-    if (routeStops.isNotEmpty) {
-      print('📋 First stop data structure: ${routeStops.first}');
-    }
+    // Convert API response to Stop entities using your existing StopModel
+    final stops =
+        routeStopsData.map((stopData) {
+          try {
+            return StopModel.fromJson(stopData) as Stop;
+          } catch (e) {
+            // Fallback manual conversion if needed
+            return StopModel(
+                  id: stopData['stop_id'] ?? 0,
+                  stopName: stopData['stop_name'] ?? 'Unknown Stop',
+                  latitude: (stopData['latitude'] ?? 0.0).toDouble(),
+                  longitude: (stopData['longitude'] ?? 0.0).toDouble(),
+                  address: stopData['address'],
+                  isMajor: stopData['is_major'] ?? false,
+                  status: stopData['status'] ?? 'active',
+                )
+                as Stop;
+          }
+        }).toList();
 
-    int? selectedPickupId;
-    int? selectedDropoffId;
-
-    showDialog(
+    StopSelectionHelper.showModernStopSelection(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
+      stops: stops,
+      routeName: route['route_name'] ?? 'Unknown Route',
+      onStopsSelected: (pickupStopId, dropoffStopId) {
+        // Navigate to trip selection
+        Navigator.push(
+          context,
+          MaterialPageRoute(
             builder:
-                (context, setDialogState) => AlertDialog(
-                  title: Text('Select Pickup & Drop-off Stops'),
-                  content: SizedBox(
-                    width: double.maxFinite,
-                    height: 400,
-                    child: Column(
-                      children: [
-                        Text(
-                          'Route: ${route['route_name'] ?? 'Unknown Route'}',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 16),
-                        Text('Available Stops: ${routeStops.length}'),
-                        SizedBox(height: 8),
-                        Text(
-                          'Pickup Stop:',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        SizedBox(height: 8),
-                        Container(
-                          height: 150,
-                          child: ListView.builder(
-                            itemCount: routeStops.length,
-                            itemBuilder: (context, index) {
-                              final stop = routeStops[index];
-                              final isSelected =
-                                  selectedPickupId == stop['stop_id'];
-
-                              // Debug: Print each stop being rendered
-                              print(
-                                '🏪 Rendering stop $index: ${stop['stop_name']} (ID: ${stop['stop_id']})',
-                              );
-
-                              return ListTile(
-                                title: Text(
-                                  stop['stop_name'] ?? 'Unknown Stop #$index',
-                                ),
-                                subtitle: Text(
-                                  'Order: ${stop['stop_order'] ?? index + 1}',
-                                ),
-                                leading: Icon(
-                                  stop['is_major'] == true
-                                      ? Icons.location_city
-                                      : Icons.location_on,
-                                  color:
-                                      stop['is_major'] == true
-                                          ? Colors.orange
-                                          : Colors.blue,
-                                ),
-                                trailing: Radio<int>(
-                                  value: stop['stop_id'] ?? index,
-                                  groupValue: selectedPickupId,
-                                  onChanged: (value) {
-                                    print('🎯 Selected pickup stop: $value');
-                                    setDialogState(() {
-                                      selectedPickupId = value;
-                                    });
-                                  },
-                                ),
-                                selected: isSelected,
-                                onTap: () {
-                                  setDialogState(() {
-                                    selectedPickupId = stop['stop_id'] ?? index;
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Drop-off Stop:',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        SizedBox(height: 8),
-                        Container(
-                          height: 150,
-                          child: ListView.builder(
-                            itemCount: routeStops.length,
-                            itemBuilder: (context, index) {
-                              final stop = routeStops[index];
-                              final isSelected =
-                                  selectedDropoffId == stop['stop_id'];
-                              final isDisabled =
-                                  selectedPickupId != null &&
-                                  (stop['stop_order'] ?? index + 1) <=
-                                      (routeStops.firstWhere(
-                                            (s) =>
-                                                s['stop_id'] ==
-                                                selectedPickupId,
-                                            orElse: () => {'stop_order': 0},
-                                          )['stop_order'] ??
-                                          0);
-
-                              return ListTile(
-                                title: Text(
-                                  stop['stop_name'] ?? 'Unknown Stop #$index',
-                                  style: TextStyle(
-                                    color: isDisabled ? Colors.grey : null,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  'Order: ${stop['stop_order'] ?? index + 1}',
-                                ),
-                                leading: Icon(
-                                  stop['is_major'] == true
-                                      ? Icons.location_city
-                                      : Icons.location_on,
-                                  color:
-                                      isDisabled
-                                          ? Colors.grey
-                                          : stop['is_major'] == true
-                                          ? Colors.orange
-                                          : Colors.blue,
-                                ),
-                                trailing: Radio<int>(
-                                  value: stop['stop_id'] ?? index,
-                                  groupValue: selectedDropoffId,
-                                  onChanged:
-                                      isDisabled
-                                          ? null
-                                          : (value) {
-                                            print(
-                                              '🎯 Selected dropoff stop: $value',
-                                            );
-                                            setDialogState(() {
-                                              selectedDropoffId = value;
-                                            });
-                                          },
-                                ),
-                                selected: isSelected,
-                                enabled: !isDisabled,
-                                onTap:
-                                    isDisabled
-                                        ? null
-                                        : () {
-                                          setDialogState(() {
-                                            selectedDropoffId =
-                                                stop['stop_id'] ?? index;
-                                          });
-                                        },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed:
-                          selectedPickupId != null && selectedDropoffId != null
-                              ? () {
-                                Navigator.pop(context);
-
-                                // Get stop names for display
-                                final pickupStop = routeStops.firstWhere(
-                                  (stop) => stop['stop_id'] == selectedPickupId,
-                                  orElse: () => {'stop_name': 'Unknown Pickup'},
-                                );
-                                final dropoffStop = routeStops.firstWhere(
-                                  (stop) =>
-                                      stop['stop_id'] == selectedDropoffId,
-                                  orElse:
-                                      () => {'stop_name': 'Unknown Dropoff'},
-                                );
-
-                                print('🚀 Navigating to trip selection:');
-                                print(
-                                  '   Pickup: ${pickupStop['stop_name']} (ID: $selectedPickupId)',
-                                );
-                                print(
-                                  '   Dropoff: ${dropoffStop['stop_name']} (ID: $selectedDropoffId)',
-                                );
-
-                                // Navigate to trip selection with selected stops
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => TripSelectionPage(
-                                          routeId: route['route_id'],
-                                          routeName:
-                                              route['route_name'] ??
-                                              'Unknown Route',
-                                          from:
-                                              pickupStop['stop_name'] ??
-                                              'Unknown',
-                                          to:
-                                              dropoffStop['stop_name'] ??
-                                              'Unknown',
-                                          pickupStopId: selectedPickupId!,
-                                          dropoffStopId: selectedDropoffId!,
-                                        ),
-                                  ),
-                                );
-                              }
-                              : null,
-                      child: Text('Continue'),
-                    ),
-                  ],
+                (context) => TripSelectionPage(
+                  routeId: route['route_id'],
+                  pickupStopId: pickupStopId,
+                  dropoffStopId: dropoffStopId,
+                  routeName: route['route_name'] ?? '',
+                  from: stops.firstWhere((s) => s.id == pickupStopId).stopName,
+                  to: stops.firstWhere((s) => s.id == dropoffStopId).stopName,
                 ),
           ),
+        );
+      },
     );
   }
 
