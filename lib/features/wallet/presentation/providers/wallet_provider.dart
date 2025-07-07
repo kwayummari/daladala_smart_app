@@ -189,19 +189,14 @@ class WalletProvider extends ChangeNotifier {
       );
 
       // Assuming processWalletPayment returns a WalletModel on success, null on failure
-      if (result != null) {
-        // Update local wallet balance
-        _wallet = result;
+      // Update local wallet balance
+      _wallet = result;
 
-        // Refresh wallet data to get updated balance and transactions
-        await getWalletBalance();
+      // Refresh wallet data to get updated balance and transactions
+      await getWalletBalance();
 
-        return true;
-      } else {
-        _setError('Wallet payment failed');
-        return false;
-      }
-    } catch (e) {
+      return true;
+        } catch (e) {
       print('💥 Wallet payment error: $e');
       _setError('Payment failed: ${e.toString()}');
       return false;
