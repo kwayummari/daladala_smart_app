@@ -25,14 +25,14 @@ class AuthRepositoryImpl implements AuthRepository {
   
   @override
   Future<Either<Failure, User>> login({
-    required String phone,
+    required String identifier,
     required String password,
     required bool rememberMe,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         final userModel = await dataSource.login(
-          phone: phone,
+          identifier: identifier,
           password: password,
         );
         

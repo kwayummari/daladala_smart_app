@@ -10,7 +10,7 @@ class LoginUseCase {
   
   Future<Either<Failure, User>> call(LoginParams params) async {
     return await repository.login(
-      phone: params.phone,
+      identifier: params.identifier,
       password: params.password,
       rememberMe: params.rememberMe,
     );
@@ -22,12 +22,12 @@ class LoginUseCase {
 }
 
 class LoginParams {
-  final String phone;
+  final String identifier;
   final String password;
   final bool rememberMe;
   
   LoginParams({
-    required this.phone,
+    required this.identifier,
     required this.password,
     required this.rememberMe,
   });

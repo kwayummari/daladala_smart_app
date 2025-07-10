@@ -7,7 +7,10 @@ import '../../../../core/utils/constants.dart';
 import '../models/user_model.dart';
 
 abstract class AuthDataSource {
-  Future<UserModel> login({required String phone, required String password});
+  Future<UserModel> login({
+    required String identifier,
+    required String password,
+  });
 
   Future<UserModel> register({
     required String phone,
@@ -38,13 +41,13 @@ class AuthDataSourceImpl implements AuthDataSource {
 
   @override
   Future<UserModel> login({
-    required String phone,
+    required String identifier,
     required String password,
   }) async {
     try {
       final response = await apiClient.dio.post(
         '${AppConstants.authEndpoint}/login',
-        data: {'phone': phone, 'password': password},
+        data: {'identifier': identifier, 'password': password},
       );
 
       if (response.statusCode == 200 && response.data['status'] == 'success') {
@@ -268,7 +271,9 @@ class AuthDataSourceImpl implements AuthDataSource {
   }
 
   @override
-  Future<Either<Failure, void>> resendVerificationCode({required String identifier}) async {
+  Future<Either<Failure, void>> resendVerificationCode({
+    required String identifier,
+  }) async {
     try {
       final response = await apiClient.dio.post(
         '/auth/resend-code',

@@ -5,7 +5,7 @@ import '../entities/user.dart';
 abstract class AuthRepository {
   /// Logs in a user with the given credentials
   Future<Either<Failure, User>> login({
-    required String phone,
+    required String identifier,
     required String password,
     required bool rememberMe,
   });
