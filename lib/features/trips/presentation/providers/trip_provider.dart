@@ -11,12 +11,18 @@ class TripProvider extends ChangeNotifier {
   List<Trip> _upcomingTrips = [];
   List<Trip> _pastTrips = [];
   List<Trip> _cancelledTrips = [];
+  List<dynamic> _driverTrips = [];
+  Map<String, dynamic>? _activeTrip;
+  Map<String, dynamic>? _seatOccupancy;
   bool _isLoading = false;
   String? _error;
 
   List<Trip> get upcomingTrips => _upcomingTrips;
   List<Trip> get pastTrips => _pastTrips;
   List<Trip> get cancelledTrips => _cancelledTrips;
+  List<dynamic> get driverTrips => _driverTrips;
+  Map<String, dynamic>? get activeTrip => _activeTrip;
+  Map<String, dynamic>? get seatOccupancy => _seatOccupancy;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get errorMessage =>
@@ -117,6 +123,160 @@ class TripProvider extends ChangeNotifier {
         '🏁 TripProvider: Finished fetching trips. Loading: $_isLoading, Error: $_error',
       );
     }
+  }
+
+  // Load driver trips
+  Future<void> loadDriverTrips({String? status}) async {
+    _setLoading(true);
+    try {
+      final response = ApiService();
+      final result = await response.getDriverTrips(status: status);
+
+      if (result['success']) {
+        _driverTrips = result['data']['data']['trips'] ?? [];
+        _error = null;
+      } else {
+        _error = result['error'];
+      }
+    } catch (e) {
+      _error = 'Failed to load trips: $e';
+    }
+    _setLoading(false);
+  }
+
+  // Load active trip
+  Future<void> loadActiveTrip() async {
+    _setLoading(true);
+    try {
+      final response = ApiService();
+      final result = await response.getDriverTrips(status: 'in_progress');
+      if (result['success']) {
+        final trips = result['data']['data']['trips'] ?? [];
+        _activeTrip = trips.isNotEmpty ? trips.first : null;
+
+        if (_activeTrip != null) {
+          await loadSeatOccupancy(_activeTrip!['trip_id']);
+        }
+        _error = null;
+      } else {
+        _error = result['error'];
+      }
+    } catch (e) {
+      _error = 'Failed to load active trip: $e';
+    }
+    _setLoading(false);
+  }
+
+  // Start trip
+  Future<bool> startTrip(int tripId) async {
+    _setLoading(true);
+    try {
+      final response = ApiService();
+      final result = await response.startTrip(tripId);
+
+      if (result['success']) {
+        await loadActiveTrip(); // Reload active trip data
+        _error = null;
+        return true;
+      } else {
+        _error = result['error'];
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to start trip: $e';
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // End trip
+  Future<bool> endTrip(int tripId) async {
+    _setLoading(true);
+    try {
+      final response = ApiService();
+      final result = await response.endTrip(tripId);
+
+      if (result['success']) {
+        _activeTrip = null; // Clear active trip
+        await loadDriverTrips(); // Reload all trips
+        _error = null;
+        return true;
+      } else {
+        _error = result['error'];
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to end trip: $e';
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Update driver location
+  Future<void> updateDriverLocation(double latitude, double longitude) async {
+    try {
+      final response = ApiService();
+      await response.updateDriverLocation(latitude: latitude, longitude: longitude);
+    } catch (e) {
+      debugPrint('Failed to update location: $e');
+    }
+  }
+
+  // Load seat occupancy
+  Future<void> loadSeatOccupancy(int tripId) async {
+    try {
+      final response = ApiService();
+      final result = await response.getTripSeatOccupancy(tripId);
+
+      if (result['success']) {
+        _seatOccupancy = result['data']['data'];
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to load seat occupancy: $e');
+    }
+  }
+
+  // Mark passenger as boarded
+  Future<void> markPassengerBoarded(int tripId, int seatId) async {
+    try {
+      final response = ApiService();
+      final result = await response.markPassengerBoarded(tripId: tripId, seatId: seatId);
+
+      if (result['success']) {
+        await loadActiveTrip(); // Reload to update passenger status
+      }
+    } catch (e) {
+      _error = 'Failed to mark passenger as boarded: $e';
+      notifyListeners();
+    }
+  }
+
+  // Mark passenger as alighted
+  Future<void> markPassengerAlighted(int tripId, int seatId) async {
+    try {
+      final response = ApiService();
+      final result = await response.markPassengerAlighted(tripId: tripId, seatId: seatId);
+
+      if (result['success']) {
+        await loadActiveTrip(); // Reload to update passenger status
+      }
+    } catch (e) {
+      _error = 'Failed to mark passenger as alighted: $e';
+      notifyListeners();
+    }
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   /// Convert booking data to Trip entity for display

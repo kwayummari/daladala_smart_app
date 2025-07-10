@@ -1,4 +1,3 @@
-import 'package:daladala_smart_app/services/api_service.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/booking.dart';
 import '../../domain/usecases/get_booking_details_usecase.dart';
@@ -158,100 +157,6 @@ class BookingProvider extends ChangeNotifier {
     return success;
   }
 
-  Future<void> loadAvailableSeats(
-    int tripId,
-    int pickupStopId,
-    int dropoffStopId,
-  ) async {
-    _isLoading = true;
-    try {
-      final response = ApiService();
-      final result = await response.getAvailableSeats(
-        tripId: tripId,
-        pickupStopId: pickupStopId,
-        dropoffStopId: dropoffStopId,
-      );
-
-      if (result['success']) {
-        _availableSeats = result['data']['data'];
-        _error = null;
-      } else {
-        _error = result['error'];
-      }
-    } catch (e) {
-      _error = 'Failed to load available seats: $e';
-    }
-    _isLoading = false;
-  }
-
-  // Load routes
-  Future<void> loadRoutes() async {
-    try {
-      final response = ApiService();
-      final result = await response.getRoutes();
-
-      if (result['success']) {
-        _routes = result['data'] ?? [];
-      }
-    } catch (e) {
-      debugPrint('Failed to load routes: $e');
-    }
-    notifyListeners();
-  }
-
-  // Load stops
-  Future<void> loadStops() async {
-    try {
-      final response = await ApiService.getStops();
-      final result = ApiService.handleResponse(response);
-
-      if (result['success']) {
-        _stops = result['data'] ?? [];
-      }
-    } catch (e) {
-      debugPrint('Failed to load stops: $e');
-    }
-    notifyListeners();
-  }
-
-  // Search trips
-  Future<void> searchTrips({
-    required int routeId,
-    required DateTime date,
-  }) async {
-    _isLoading = true;
-    try {
-      final response = ApiService();
-      final result = await response.getTrips(
-        filters: {
-          'route_id': routeId,
-          'date': date.toIso8601String().split('T')[0],
-        },
-      );
-      if (result['success']) {
-        _availableTrips = result['data'] ?? [];
-        _error = null;
-      } else {
-        _error = result['error'];
-      }
-    } catch (e) {
-      _error = 'Failed to search trips: $e';
-    }
-    _isLoading = false;
-    ;
-  }
-
-  // Add these getters to your BookingProvider class:
-  Map<String, dynamic>? get availableSeats => _availableSeats;
-  List<dynamic> get availableTrips => _availableTrips;
-  List<dynamic> get routes => _routes;
-  List<dynamic> get stops => _stops;
-
-  // Add these private variables to your BookingProvider class:
-  Map<String, dynamic>? _availableSeats;
-  List<dynamic> _availableTrips = [];
-  List<dynamic> _routes = [];
-  List<dynamic> _stops = [];
 
   void clearError() {
     _error = null;

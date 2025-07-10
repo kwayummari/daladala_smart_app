@@ -1,4 +1,7 @@
+import 'package:daladala_smart_app/features/bookings/presentation/providers/business_provider.dart';
+import 'package:daladala_smart_app/features/location/presentation/providers/location_provider.dart';
 import 'package:daladala_smart_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:daladala_smart_app/features/qr/presentation/providers/qr_provider.dart';
 import 'package:daladala_smart_app/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +48,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => getIt<TripProvider>()),
         ChangeNotifierProvider(create: (_) => getIt<RouteProvider>()),
         ChangeNotifierProvider(create: (_) => getIt<PaymentProvider>()),
+        ChangeNotifierProvider(create: (_) => BusinessProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => QRProvider()),
         ChangeNotifierProvider<ProfileProvider>(
           create: (_) => getIt<ProfileProvider>(),
         ),
