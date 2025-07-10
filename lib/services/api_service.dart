@@ -484,7 +484,7 @@ class ApiService {
   }
 
   // Get route stops
-  static Future<List<Map<String, dynamic>>> getRouteStops(int routeId) async {
+  Future<List<Map<String, dynamic>>> getRouteStops(int routeId) async {
     try {
       final response = await http.get(
         Uri.parse(
@@ -603,22 +603,19 @@ class ApiService {
   }
 
   // Trips Methods
-  Future<Map<String, dynamic>> getTrips({
-    String? from,
-    String? to,
-    DateTime? date,
-    int page = 1,
-    int limit = 10,
-  }) async {
+  Future<Map<String, dynamic>> getTrips({Map<String, dynamic>? filters}) async {
     try {
       final headers = await _getHeaders();
-      final queryParams = {
-        'page': page.toString(),
-        'limit': limit.toString(),
-        if (from != null) 'from': from,
-        if (to != null) 'to': to,
-        if (date != null) 'date': date.toIso8601String().split('T')[0],
-      };
+
+      // Build query parameters from filters
+      final queryParams = <String, String>{};
+      if (filters != null) {
+        filters.forEach((key, value) {
+          if (value != null) {
+            queryParams[key] = value.toString();
+          }
+        });
+      }
 
       final uri = Uri.parse(
         '$baseUrl/trips',
@@ -627,12 +624,13 @@ class ApiService {
       final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final data = json.decode(response.body);
+        return {'success': true, 'data': data['data'] ?? []};
       } else {
-        throw Exception('Failed to load trips');
+        return {'success': false, 'error': 'Failed to load trips'};
       }
     } catch (e) {
-      throw Exception('Network error: $e');
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
@@ -1281,7 +1279,8 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> createEmployeeBooking(Map<String, dynamic> bookingData, {
+  Future<Map<String, dynamic>> createEmployeeBooking(
+    Map<String, dynamic> bookingData, {
     required int tripId,
     required int pickupStopId,
     required int dropoffStopId,
@@ -1322,7 +1321,7 @@ class ApiService {
     }
   }
 
-   Future<http.Response> getCurrentUser() async {
+  Future<http.Response> getCurrentUser() async {
     final headers = await _getHeaders();
     return await http.get(Uri.parse('$baseUrl/auth/me'), headers: headers);
   }
@@ -1566,6 +1565,43 @@ class ApiService {
         'statusCode': response.statusCode,
         'data': data,
       };
+    }
+  }
+
+  Future<Map<String, dynamic>> getStops() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/stops'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {'success': true, 'data': data['data'] ?? []};
+      } else {
+        return {'success': false, 'error': 'Failed to load stops'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getRoutes() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/routes'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {'success': true, 'data': data['data'] ?? []};
+      } else {
+        return {'success': false, 'error': 'Failed to load routes'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 }

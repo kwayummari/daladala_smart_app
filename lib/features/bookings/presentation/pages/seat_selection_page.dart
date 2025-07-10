@@ -175,16 +175,28 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
             onContinue:
                 selectedSeats.length == passengerCount
                     ? () {
+                      // In seat_selection_page.dart, fix the navigation:
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (context) => BookingConfirmationPage(
-                                trip: widget.trip,
+                                tripId:
+                                    widget.trip['trip_id']
+                                        as int, // Extract trip_id from the map
+                                routeName: widget.trip['route_name'] ?? '',
+                                from: widget.trip['start_point'] ?? '',
+                                to: widget.trip['end_point'] ?? '',
+                                startTime:
+                                    DateTime.tryParse(
+                                      widget.trip['start_time'] ?? '',
+                                    ) ??
+                                    DateTime.now(),
+                                fare: (widget.trip['fare'] ?? 0.0).toDouble(),
+                                vehiclePlate:
+                                    widget.trip['vehicle_plate'] ?? '',
                                 pickupStopId: widget.pickupStopId,
                                 dropoffStopId: widget.dropoffStopId,
-                                selectedSeats: selectedSeats,
-                                passengerCount: passengerCount, tripId: widget.trip, routeName: '', from: '', to: '', startTime: null, fare: null, vehiclePlate: '',
                               ),
                         ),
                       );

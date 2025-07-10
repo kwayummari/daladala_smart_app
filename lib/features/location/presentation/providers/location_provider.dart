@@ -30,11 +30,12 @@ class LocationProvider extends ChangeNotifier {
   // Check location permissions and service
   Future<void> checkLocationPermissions() async {
     _isServiceEnabled = await Geolocator.isLocationServiceEnabled();
-    
+
     LocationPermission permission = await Geolocator.checkPermission();
-    _isPermissionGranted = permission == LocationPermission.whileInUse || 
-                          permission == LocationPermission.always;
-    
+    _isPermissionGranted =
+        permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
+
     notifyListeners();
   }
 
@@ -46,9 +47,10 @@ class LocationProvider extends ChangeNotifier {
     }
 
     LocationPermission permission = await Geolocator.requestPermission();
-    _isPermissionGranted = permission == LocationPermission.whileInUse || 
-                          permission == LocationPermission.always;
-    
+    _isPermissionGranted =
+        permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
+
     notifyListeners();
     return _isPermissionGranted;
   }
@@ -67,7 +69,8 @@ class LocationProvider extends ChangeNotifier {
     // Start location stream
     Geolocator.getPositionStream(
       locationSettings: LocationSettings(
-        accuracy: _highAccuracyMode ? LocationAccuracy.high : LocationAccuracy.medium,
+        accuracy:
+            _highAccuracyMode ? LocationAccuracy.high : LocationAccuracy.medium,
         distanceFilter: 10,
         timeLimit: Duration(seconds: _updateInterval),
       ),
@@ -93,7 +96,7 @@ class LocationProvider extends ChangeNotifier {
   void _updateLocation(Position position) {
     _currentLocation = position;
     _lastUpdate = DateTime.now();
-    
+
     // Add to history
     _locationHistory.insert(0, {
       'latitude': position.latitude,
@@ -119,7 +122,11 @@ class LocationProvider extends ChangeNotifier {
   // Send location to server
   Future<void> _sendLocationToServer(double latitude, double longitude) async {
     try {
-      await ApiService.updateDriverLocation(latitude, longitude);
+      final response = ApiService();
+      await response.updateDriverLocation(
+        latitude: latitude,
+        longitude: longitude,
+      );
     } catch (e) {
       debugPrint('Failed to send location to server: $e');
     }
@@ -129,7 +136,7 @@ class LocationProvider extends ChangeNotifier {
   void setHighAccuracyMode(bool enabled) {
     _highAccuracyMode = enabled;
     notifyListeners();
-    
+
     // Restart tracking if currently tracking
     if (_isTracking) {
       stopTracking();
@@ -141,7 +148,7 @@ class LocationProvider extends ChangeNotifier {
   void setUpdateInterval(int interval) {
     _updateInterval = interval;
     notifyListeners();
-    
+
     // Restart tracking if currently tracking
     if (_isTracking) {
       stopTracking();

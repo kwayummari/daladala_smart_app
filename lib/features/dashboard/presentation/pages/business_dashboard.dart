@@ -1,6 +1,9 @@
 
 import 'package:daladala_smart_app/features/bookings/presentation/pages/business_overview_page.dart';
 import 'package:daladala_smart_app/features/bookings/presentation/pages/pending_approvals_page.dart';
+import 'package:daladala_smart_app/features/business/presentation/pages/business_profile_page.dart';
+import 'package:daladala_smart_app/features/business/presentation/pages/business_reports_page.dart';
+import 'package:daladala_smart_app/features/business/presentation/pages/employee_bookings_page.dart';
 import 'package:daladala_smart_app/features/dashboard/presentation/widgets/business_bottom_nav.dart';
 import 'package:flutter/material.dart';
 

@@ -31,6 +31,16 @@ class BookingProvider extends ChangeNotifier {
   Booking? _currentBooking;
   Booking? get currentBooking => _currentBooking;
 
+  Map<String, dynamic>? _availableSeats;
+  List<dynamic> _availableTrips = [];
+  List<dynamic> _routes = [];
+  List<dynamic> _stops = [];
+
+  Map<String, dynamic>? get availableSeats => _availableSeats;
+  List<dynamic> get availableTrips => _availableTrips;
+  List<dynamic> get routes => _routes;
+  List<dynamic> get stops => _stops;
+
   Future<void> getUserBookings({String? status}) async {
     _isLoading = true;
     _error = null;
@@ -164,16 +174,18 @@ class BookingProvider extends ChangeNotifier {
     int dropoffStopId,
   ) async {
     _isLoading = true;
+    notifyListeners();
+    
     try {
-      final response = ApiService();
-      final result = await response.getAvailableSeats(
+      final apiService = ApiService();
+      final result = await apiService.getAvailableSeats(
         tripId: tripId,
         pickupStopId: pickupStopId,
         dropoffStopId: dropoffStopId,
       );
 
       if (result['success']) {
-        _availableSeats = result['data']['data'];
+        _availableSeats = result['data'];
         _error = null;
       } else {
         _error = result['error'];
@@ -181,14 +193,16 @@ class BookingProvider extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to load available seats: $e';
     }
+    
     _isLoading = false;
+    notifyListeners();
   }
 
   // Load routes
   Future<void> loadRoutes() async {
     try {
-      final response = ApiService();
-      final result = await response.getRoutes();
+      final apiService = ApiService();
+      final result = await apiService.getRoutes();
 
       if (result['success']) {
         _routes = result['data'] ?? [];
@@ -202,8 +216,8 @@ class BookingProvider extends ChangeNotifier {
   // Load stops
   Future<void> loadStops() async {
     try {
-      final response = await ApiService.getStops();
-      final result = ApiService.handleResponse(response);
+      final apiService = ApiService();
+      final result = await apiService.getStops();
 
       if (result['success']) {
         _stops = result['data'] ?? [];
@@ -220,14 +234,17 @@ class BookingProvider extends ChangeNotifier {
     required DateTime date,
   }) async {
     _isLoading = true;
+    notifyListeners();
+
     try {
-      final response = ApiService();
-      final result = await response.getTrips(
+      final apiService = ApiService();
+      final result = await apiService.getTrips(
         filters: {
           'route_id': routeId,
           'date': date.toIso8601String().split('T')[0],
         },
       );
+
       if (result['success']) {
         _availableTrips = result['data'] ?? [];
         _error = null;
@@ -237,21 +254,11 @@ class BookingProvider extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to search trips: $e';
     }
+
     _isLoading = false;
-    ;
+    notifyListeners();
   }
 
-  // Add these getters to your BookingProvider class:
-  Map<String, dynamic>? get availableSeats => _availableSeats;
-  List<dynamic> get availableTrips => _availableTrips;
-  List<dynamic> get routes => _routes;
-  List<dynamic> get stops => _stops;
-
-  // Add these private variables to your BookingProvider class:
-  Map<String, dynamic>? _availableSeats;
-  List<dynamic> _availableTrips = [];
-  List<dynamic> _routes = [];
-  List<dynamic> _stops = [];
 
   void clearError() {
     _error = null;

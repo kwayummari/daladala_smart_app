@@ -1,10 +1,10 @@
 
 import 'package:daladala_smart_app/features/dashboard/presentation/widgets/driver_bottom_nav.dart';
+import 'package:daladala_smart_app/features/driver/presentation/pages/driver_profile_page.dart';
 import 'package:daladala_smart_app/features/qr/presentation/pages/location_tracking_page.dart';
 import 'package:daladala_smart_app/features/trips/presentation/pages/driver_trips_page.dart';
 import 'package:daladala_smart_app/features/trips/presentation/pages/live_trip_page.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class DriverDashboard extends StatefulWidget {
   const DriverDashboard({Key? key}) : super(key: key);

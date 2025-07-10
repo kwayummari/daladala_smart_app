@@ -1,5 +1,5 @@
 
-import 'package:daladala_smart_app/features/bookings/presentation/providers/booking_provider2.dart';
+import 'package:daladala_smart_app/features/bookings/presentation/providers/booking_provider.dart';
 import 'package:daladala_smart_app/features/bookings/presentation/widgets/route_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

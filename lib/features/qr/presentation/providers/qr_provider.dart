@@ -16,9 +16,9 @@ class QRProvider extends ChangeNotifier {
   Future<void> generateBookingQR(int bookingId) async {
     _setLoading(true);
     try {
-      final response = await ApiService.generateBookingQRCode(bookingId);
-      final result = ApiService.handleResponse(response);
-      
+      final response = ApiService();
+      final result = await response.generateBookingQRCode(bookingId);
+
       if (result['success']) {
         _currentQRData = result['data']['data'];
         _error = null;
@@ -38,7 +38,7 @@ class QRProvider extends ChangeNotifier {
       // This would be a new API endpoint for getting booking receipt
       // For now, we'll simulate the response
       await Future.delayed(const Duration(seconds: 1));
-      
+
       _currentQRData = {
         'receipt_number': 'DLS-BKG-20250710-000123',
         'amount': '3000.00',
@@ -56,16 +56,16 @@ class QRProvider extends ChangeNotifier {
   Future<void> validateTicket(String qrData) async {
     _setLoading(true);
     try {
-      final response = await ApiService.validateTicket(qrData);
-      final result = ApiService.handleResponse(response);
-      
+      final response = ApiService();
+      final result = await response.validateTicket(qrData);
+
       _lastScanResult = {
         'type': 'ticket',
         'valid': result['success'],
         'data': result['data'],
         'message': result['success'] ? 'Valid ticket' : result['error'],
       };
-      
+
       _error = result['success'] ? null : result['error'];
     } catch (e) {
       _lastScanResult = {
@@ -84,7 +84,7 @@ class QRProvider extends ChangeNotifier {
     try {
       // This would be a new API endpoint for receipt verification
       await Future.delayed(const Duration(seconds: 1));
-      
+
       _lastScanResult = {
         'type': 'receipt',
         'valid': true,

@@ -54,6 +54,9 @@ dependencies:
   sms_autofill: ^2.4.1
   http_parser: ^4.0.2
   mime: ^1.0.4
+  # qr_code_scanner: ^0.7.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.2
 
 dev_dependencies:
   flutter_test:
