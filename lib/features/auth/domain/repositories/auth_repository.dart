@@ -15,6 +15,8 @@ abstract class AuthRepository {
     required String phone,
     required String email,
     required String password,
+    required String national_id,
+    required String role
   });
   
   /// Logs out the current user

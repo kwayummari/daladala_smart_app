@@ -74,7 +74,7 @@ class _RegisterPageState extends State<RegisterPage> {
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        nationalId: _nationalIdController.text.trim(),
+        national_id: _nationalIdController.text.trim(),
         role: _selectedRole,
       );
 

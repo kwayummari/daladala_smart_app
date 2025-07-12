@@ -1,29 +1,34 @@
-import 'package:daladala_smart_app/features/bookings/presentation/pages/bookings_page.dart';
+// lib/features/home/presentation/pages/home_page.dart
+import 'package:daladala_smart_app/features/bookings/presentation/pages/business_overview_page.dart';
+import 'package:daladala_smart_app/features/bookings/presentation/pages/pending_approvals_page.dart';
+import 'package:daladala_smart_app/features/bookings/presentation/pages/search_trips_page.dart';
+import 'package:daladala_smart_app/features/business/presentation/pages/business_profile_page.dart';
+import 'package:daladala_smart_app/features/business/presentation/pages/business_reports_page.dart';
+import 'package:daladala_smart_app/features/business/presentation/pages/employee_bookings_page.dart';
+import 'package:daladala_smart_app/features/driver/presentation/pages/driver_profile_page.dart';
+import 'package:daladala_smart_app/features/passenger/presentation/pages/my_bookings_page.dart';
+import 'package:daladala_smart_app/features/passenger/presentation/pages/on_demand_page.dart';
+import 'package:daladala_smart_app/features/passenger/presentation/pages/pre_bookings_page.dart';
 import 'package:daladala_smart_app/features/profile/presentation/pages/profile_page.dart';
-import 'package:daladala_smart_app/features/routes/presentation/pages/routes_page.dart';
-import 'package:daladala_smart_app/features/trips/presentation/pages/trips_page.dart';
+import 'package:daladala_smart_app/features/qr/presentation/pages/location_tracking_page.dart';
+import 'package:daladala_smart_app/features/trips/presentation/pages/driver_trips_page.dart';
+import 'package:daladala_smart_app/features/trips/presentation/pages/live_trip_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../widgets/home_search_bar.dart';
-import '../widgets/home_nearby_stops.dart';
-import '../widgets/home_upcoming_trips.dart';
-import '../widgets/home_quick_actions.dart';
+import '../../../trips/presentation/providers/trip_provider.dart';
+import '../../../routes/presentation/providers/route_provider.dart';
 
 class HomePage extends StatefulWidget {
-  // Add a global key to access the state from other widgets
   static final GlobalKey<_HomePageState> homeKey = GlobalKey<_HomePageState>();
 
-  // Updated constructor to use the global key
   HomePage({Key? key}) : super(key: homeKey);
 
-  // Static method to navigate to routes page
   static void navigateToRoutes() {
     homeKey.currentState?.navigateToTab(1);
   }
 
-  // Static method to navigate to any tab
   static void navigateToTab(int index) {
     homeKey.currentState?.navigateToTab(index);
   }
@@ -32,249 +37,210 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
-
   GoogleMapController? _mapController;
+  late AnimationController _refreshAnimationController;
 
-  final List<Widget> _pages = [
-    const _HomeContent(),
-    const RoutesPage(),
-    const TripsPage(),
-    const BookingsPage(),
-    const ProfilePage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _refreshAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _refreshAnimationController.dispose();
     _mapController?.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  // Make this method public to allow access from static methods
+  Future<void> _initializeData() async {
+    final tripProvider = context.read<TripProvider>();
+    final routeProvider = context.read<RouteProvider>();
+
+    await Future.wait([
+      tripProvider.getUpcomingTrips(),
+      routeProvider.getAllRoutes(),
+    ]);
+  }
+
+  // Future<void> _refreshData() async {
+  //   _refreshAnimationController.repeat();
+  //   try {
+  //     await _initializeData();
+  //   } finally {
+  //     _refreshAnimationController.stop();
+  //     _refreshAnimationController.reset();
+  //   }
+  // }
+
   void navigateToTab(int index) {
     setState(() {
       _currentIndex = index;
     });
-    _pageController.jumpToPage(index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
-  void _onItemTapped(int index) {
-    navigateToTab(index);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Provider.of<AuthProvider>(context);
-
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onItemTapped,
-        items: const [
+  // Get navigation items based on user role
+  List<BottomNavigationBarItem> _getNavigationItems(String userRole) {
+    switch (userRole) {
+      case 'driver':
+        return const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Routes',
+            icon: Icon(Icons.directions_bus),
+            label: 'My Trips',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.directions_bus_outlined),
-            activeIcon: Icon(Icons.directions_bus),
-            label: 'Trips',
+            icon: Icon(Icons.people),
+            label: 'Passengers',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ];
+      case 'operator':
+      case 'admin':
+        return const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
+            icon: Icon(Icons.directions_bus),
+            label: 'Fleet',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Drivers'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Reports',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ];
+      case 'business':
+        return const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Employees'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
             label: 'Bookings',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.analytics),
+            label: 'Reports',
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeContent extends StatefulWidget {
-  const _HomeContent({Key? key}) : super(key: key);
-
-  @override
-  State<_HomeContent> createState() => _HomeContentState();
-}
-
-class _HomeContentState extends State<_HomeContent> {
-  GoogleMapController? _mapController;
-  final CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(-6.8025, 39.2599), // Dar es Salaam city center
-    zoom: 14.0,
-  );
-
-  Set<Marker> _markers = {};
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ];
+      default: // passenger
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Routes'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.directions_bus),
+            label: 'Trips',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'Bookings',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ];
+    }
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-
-    // Add some sample markers for bus stops
-    setState(() {
-      _markers = {
-        const Marker(
-          markerId: MarkerId('stop1'),
-          position: LatLng(-6.7889, 39.2083),
-          infoWindow: InfoWindow(title: 'Mwenge Bus Terminal'),
-        ),
-        const Marker(
-          markerId: MarkerId('stop2'),
-          position: LatLng(-6.8123, 39.2875),
-          infoWindow: InfoWindow(title: 'Posta CBD'),
-        ),
-        const Marker(
-          markerId: MarkerId('stop3'),
-          position: LatLng(-6.7801, 39.2082),
-          infoWindow: InfoWindow(title: 'Ubungo Bus Terminal'),
-        ),
-      };
-    });
+  // Get pages based on user role
+  List<Widget> _getPages(String userRole) {
+    switch (userRole) {
+      case 'driver':
+        return [
+          const DriverTripsPage(),
+          const LocationTrackingPage(),
+          const LiveTripPage(),
+          const ProfilePage(),
+        ];
+      // case 'operator':
+      // case 'admin':
+      //   return [
+      //     _buildOperatorDashboard(),
+      //     _buildFleetManagement(),
+      //     _buildDriverManagement(),
+      //     _buildReports(),
+      //     const ProfilePage(),
+      //   ];
+      case 'business':
+        return [
+          const BusinessOverviewPage(),
+          const EmployeeBookingsPage(),
+          const PendingApprovalsPage(),
+          const BusinessReportsPage(),
+          const BusinessProfilePage(),
+          const ProfilePage(),
+        ];
+      default: // passenger
+        return [
+          const SearchTripsPage(),
+          const MyBookingsPage(),
+          const PreBookingsPage(),
+          const OnDemandPage(),
+          const ProfilePage(),
+        ];
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    Provider.of<AuthProvider>(context);
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.currentUser;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Map view
-            SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: GoogleMap(
-                initialCameraPosition: _initialCameraPosition,
-                onMapCreated: _onMapCreated,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                mapToolbarEnabled: false,
-                zoomControlsEnabled: false,
-                markers: _markers,
-              ),
-            ),
+        if (user == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-            // Bottom sheet with content
-            DraggableScrollableSheet(
-              initialChildSize: 0.35,
-              minChildSize: 0.15,
-              maxChildSize: 0.85,
-              builder: (context, scrollController) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Handle
-                        Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 12, bottom: 8),
-                            width: 40,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2.5),
-                            ),
-                          ),
-                        ),
+        final userRole = user.role;
+        final navigationItems = _getNavigationItems(userRole);
+        final pages = _getPages(userRole);
 
-                        // Greeting
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Good morning,',
-                                      style:
-                                          Theme.of(context).textTheme.bodyLarge,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Ready, Set, Drive',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  // Navigate to notifications
-                                },
-                                icon: const Icon(Icons.notifications_outlined),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Search bar
-                        const HomeSearchBar(),
-
-                        // Quick actions
-                        const HomeQuickActions(),
-
-                        // Nearby stops
-                        const HomeNearbyStops(),
-
-                        // Upcoming trips
-                        const HomeUpcomingTrips(),
-
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+        return Scaffold(
+          body: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            children: pages,
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: navigateToTab,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: Theme.of(context).primaryColor,
+            unselectedItemColor: Colors.grey,
+            items: navigationItems,
+          ),
+        );
+      },
     );
   }
 }

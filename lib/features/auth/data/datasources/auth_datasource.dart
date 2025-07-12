@@ -16,6 +16,8 @@ abstract class AuthDataSource {
     required String phone,
     required String email,
     required String password,
+    required String national_id,
+    required String role
   });
 
   Future<void> logout();
@@ -98,11 +100,14 @@ class AuthDataSourceImpl implements AuthDataSource {
     required String phone,
     required String email,
     required String password,
+    required String national_id,
+    required String role
   }) async {
     try {
       final response = await apiClient.dio.post(
         '${AppConstants.authEndpoint}/register',
-        data: {'phone': phone, 'email': email, 'password': password},
+        data: {'phone': phone, 'email': email, 'password': password, 'national_id': national_id,
+        'role': role},
       );
 
       if (response.statusCode == 201 && response.data['status'] == 'success') {

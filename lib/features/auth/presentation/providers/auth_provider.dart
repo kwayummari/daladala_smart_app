@@ -106,7 +106,7 @@ class AuthProvider extends ChangeNotifier {
     required String phone,
     required String email,
     required String password,
-    required String nationalId,
+    required String national_id,
     required String role
   }) async {
     _isLoading = true;
@@ -116,6 +116,8 @@ class AuthProvider extends ChangeNotifier {
       phone: phone,
       email: email,
       password: password,
+      national_id: national_id,
+      role: role
     );
 
     final result = await registerUseCase(params);

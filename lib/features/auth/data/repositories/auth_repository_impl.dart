@@ -67,6 +67,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String phone,
     required String email,
     required String password,
+    required String national_id,
+    required String role
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -74,6 +76,8 @@ class AuthRepositoryImpl implements AuthRepository {
           phone: phone,
           email: email,
           password: password,
+          national_id: national_id,
+          role: role
         );
         
         // Save auth token
